@@ -38,7 +38,7 @@ This system was not designed in isolation — it was built through real, iterati
 
 **1. `@latest` is a trap.** The `obsidian-mcp-server@latest` tag pulled an incompatible version that broke every tool with `-32602` schema errors. The fix was to pin to `obsidian-mcp-server@3.1.5`. Every skill in this system now documents version pinning as a hard requirement.
 
-**2. The host schema translation bug.** OpenCode's MCP client layer incorrectly translates discriminated-union parameter schemas when a tool has two or more nested-object parameters. This makes `obsidian_patch_note` and `obsidian_append_to_note` completely unusable. All six skills now use `obsidian_replace_in_note` as the sole surgical-editing workaround.
+**2. The host schema translation bug.** OpenCode's MCP client layer incorrectly translates discriminated-union parameter schemas when a tool has two or more nested-object parameters. This makes `obsidian_patch_note` and `obsidian_append_to_note` completely unusable. All seven skills now use `obsidian_replace_in_note` as the sole surgical-editing workaround.
 
 **3. Claude-centric assumptions don't survive OpenCode reality.** The original inspiration article assumed a single AI host that "reads your vault and gets smarter over time." OpenCode is a multi-skill, multi-agent orchestration platform — context is distributed across skills, agents, MCP tools, and session state, not concentrated in one file.
 
@@ -56,7 +56,7 @@ This system was not designed in isolation — it was built through real, iterati
 
 #### How the Chain Saves Tokens While Maintaining Accuracy
 
-The six skills form an execution chain where each stage narrows the focus and increases the signal-to-noise ratio:
+The knowledge-workflow skills form an execution chain where each stage narrows the focus and increases the signal-to-noise ratio:
 
 ```
 Raw Inbox (high volume, low signal)
@@ -73,12 +73,11 @@ At each stage, information that doesn't affect decisions is discarded. The syste
 - [OpenCode](https://github.com/anomalyco/opencode) with `oh-my-opencode` plugin
 - [obsidian-mcp-server@3.1.5](https://github.com/cyanheads/obsidian-mcp-server) configured as an MCP server
 - Obsidian vault with the [Local REST API plugin](https://github.com/coddingtonbear/obsidian-local-rest-api) enabled
-- The `obsidian-mcp` skill installed for safe vault operations
+- The `obsidian-mcp` skill from this project (included in `skills/`)
 
 ### Installation
 
 ```bash
-cp -r skills/obsidian-mcp ~/.opencode/skills/
 cp -r skills/obsidian-mcp ~/.opencode/skills/
 cp -r skills/inbox-triage ~/.opencode/skills/
 cp -r skills/connection-review ~/.opencode/skills/
@@ -160,9 +159,9 @@ Capture → Inbox → inbox-triage → connection-review → weekly-synthesis �
 
 #### 我们踩过的坑
 
-**1. `@latest` 是陷阱。** `obsidian-mcp-server@latest` 拉下来的版本和 OpenCode 宿主不兼容，所有 `patch_note`/`append_to_note` 调用全部报 `-32602` schema 错误。修复方法是锁定到 `obsidian-mcp-server@3.1.5`。现在所有 6 个 skill 都内置了版本锁定作为硬约束。
+**1. `@latest` 是陷阱。** `obsidian-mcp-server@latest` 拉下来的版本和 OpenCode 宿主不兼容，所有 `patch_note`/`append_to_note` 调用全部报 `-32602` schema 错误。修复方法是锁定到 `obsidian-mcp-server@3.1.5`。现在所有 7 个 skill 都内置了版本锁定作为硬约束。
 
-**2. 宿主 schema 翻译 bug。** OpenCode 的 MCP 客户端层在翻译 discriminated-union 参数 schema 时出错——当一个工具有两个以上嵌套对象参数时，宿主会把嵌套 schema 扁平化然后用错误的结构去校验。这导致 `obsidian_patch_note` 和 `obsidian_append_to_note` 完全不可用。六个 skill 全部改用 `obsidian_replace_in_note` 作为唯一的手术式编辑方案。
+**2. 宿主 schema 翻译 bug。** OpenCode 的 MCP 客户端层在翻译 discriminated-union 参数 schema 时出错——当一个工具有两个以上嵌套对象参数时，宿主会把嵌套 schema 扁平化然后用错误的结构去校验。这导致 `obsidian_patch_note` 和 `obsidian_append_to_note` 完全不可用。全部七个 skill 改用 `obsidian_replace_in_note` 作为唯一的手术式编辑方案。
 
 **3. Claude 中心主义的假设在 OpenCode 现实中站不住。** 启发本项目的原始文章假设了一个"单一 AI 宿主长期读你的 vault 并越来越懂你"的模型。但 OpenCode 是一个多 skill、多 agent 的编排平台——上下文分布在 skills、agents、MCP 工具和 session 状态里，而不是集中在单一模型或者单一文件中。
 
@@ -180,7 +179,7 @@ Capture → Inbox → inbox-triage → connection-review → weekly-synthesis �
 
 #### 执行链如何节省 token 并保持准确率
 
-六个 skill 形成了一条逐级聚焦、signal-to-noise 逐级提升的执行链：
+知识工作流 skills 形成了一条逐级聚焦、signal-to-noise 逐级提升的执行链：
 
 ```
 原始 Inbox（大体积，低信号）
