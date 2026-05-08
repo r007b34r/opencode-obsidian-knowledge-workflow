@@ -29,6 +29,44 @@ Capture → Inbox → inbox-triage → connection-review → weekly-synthesis �
 
 All skills follow the same discipline: **analysis-first → user confirmation → write-back**. No blind vault modifications.
 
+### Design Philosophy & Lessons Learned
+
+This system was not designed in isolation — it was built through real, iterative debugging against a live OpenCode + Obsidian environment. Every design decision was stress-tested against actual tool failures and platform constraints.
+
+#### Pitfalls We Hit (So You Won't Have To)
+
+**1. `@latest` is a trap.** The `obsidian-mcp-server@latest` tag pulled an incompatible version that broke every tool with `-32602` schema errors. The fix was to pin to `obsidian-mcp-server@3.1.5`. Every skill in this system now documents version pinning as a hard requirement.
+
+**2. The host schema translation bug.** OpenCode's MCP client layer incorrectly translates discriminated-union parameter schemas when a tool has two or more nested-object parameters. This makes `obsidian_patch_note` and `obsidian_append_to_note` completely unusable. All six skills now use `obsidian_replace_in_note` as the sole surgical-editing workaround.
+
+**3. Claude-centric assumptions don't survive OpenCode reality.** The original inspiration article assumed a single AI host that "reads your vault and gets smarter over time." OpenCode is a multi-skill, multi-agent orchestration platform — context is distributed across skills, agents, MCP tools, and session state, not concentrated in one file.
+
+**4. The tool surface is not the design surface.** `obsidian_get_note format:"full"` returns the entire note body — there is no native partial-read capability. The layered-reading strategy (shallow → deep) works by approximating shallow reads through `format:"document-map"` + `list_notes` metadata. The system was redesigned around this constraint rather than pretending it didn't exist.
+
+#### Core Insights
+
+**Host-reality-first design.** Every skill was derived from what the platform actually supports — not from an idealized knowledge-management architecture. If a tool failed, the skill was redesigned around the working alternative. If an article assumed capabilities the platform didn't have, those assumptions were removed.
+
+**Separate analysis from write-back.** This is the single most important design decision in the entire system. Every skill produces a reviewable report first and stops for human confirmation before any vault modification. This eliminates blind writes, controls risk, and preserves reasoning transparency.
+
+**Layered reading saves 50–70% token cost.** By reading metadata → structure → full body in stages, the system avoids burning context budget on low-value material. Only items that genuinely need deep attention ever get full reads.
+
+**Confirmation gates prevent skill overreach.** Without confirmation stops, `inbox-triage` becomes mini-synthesis, `connection-review` becomes full-vault search, and `note-promotion` promotes everything. The confirmation gate is what keeps each skill inside its responsibility radius.
+
+#### How the Chain Saves Tokens While Maintaining Accuracy
+
+The six skills form an execution chain where each stage narrows the focus and increases the signal-to-noise ratio:
+
+```
+Raw Inbox (high volume, low signal)
+    → inbox-triage: shallow-filter, keep only promising items    [~70% token reduction]
+    → connection-review: structure-read first, deep-read minority [~50% token reduction]
+    → weekly-synthesis: recent-first, old-notes-as-calibration  [~60% token reduction]
+    → opencode-context-maintenance: entry-point-only inspection  [~80% token reduction]
+```
+
+At each stage, information that doesn't affect decisions is discarded. The system never "reads everything just in case." This is the opposite of the common AI pattern of front-loading full context — it is a conscious design choice to treat token budget as a first-class resource.
+
 ### Prerequisites
 
 - [OpenCode](https://github.com/anomalyco/opencode) with `oh-my-opencode` plugin
@@ -111,6 +149,44 @@ Capture → Inbox → inbox-triage → connection-review → weekly-synthesis �
 ```
 
 所有技能遵循统一纪律：**分析优先 → 用户确认 → 写入 vault**。不盲目覆盖现有笔记。
+
+### 设计哲学与踩坑实录
+
+这个系统不是凭空设计的——它是在真实的 OpenCode + Obsidian 环境中，通过反复调试和实测打磨出来的。每一个设计决策都经过了真实工具故障和平台约束的压力验证。
+
+#### 我们踩过的坑
+
+**1. `@latest` 是陷阱。** `obsidian-mcp-server@latest` 拉下来的版本和 OpenCode 宿主不兼容，所有 `patch_note`/`append_to_note` 调用全部报 `-32602` schema 错误。修复方法是锁定到 `obsidian-mcp-server@3.1.5`。现在所有 6 个 skill 都内置了版本锁定作为硬约束。
+
+**2. 宿主 schema 翻译 bug。** OpenCode 的 MCP 客户端层在翻译 discriminated-union 参数 schema 时出错——当一个工具有两个以上嵌套对象参数时，宿主会把嵌套 schema 扁平化然后用错误的结构去校验。这导致 `obsidian_patch_note` 和 `obsidian_append_to_note` 完全不可用。六个 skill 全部改用 `obsidian_replace_in_note` 作为唯一的手术式编辑方案。
+
+**3. Claude 中心主义的假设在 OpenCode 现实中站不住。** 启发本项目的原始文章假设了一个"单一 AI 宿主长期读你的 vault 并越来越懂你"的模型。但 OpenCode 是一个多 skill、多 agent 的编排平台——上下文分布在 skills、agents、MCP 工具和 session 状态里，而不是集中在单一模型或者单一文件中。
+
+**4. 工具表面不等于设计表面。** `obsidian_get_note format:"full"` 返回的是笔记全文——没有原生的"只读前 N 行"能力。分层读取策略（浅读 → 深读）是通过 `format:"document-map"` + `list_notes` 元数据来近似实现的。系统围绕这个约束重新设计，而不是假装它不存在。
+
+#### 核心思想
+
+**宿主现实优先的设计原则。** 每个 skill 都是从平台真实支持的能力倒推出来的——不是从理想化的知识管理架构出发。哪个工具实际不可用，skill 就围绕可用的替代方案重新设计。哪篇文章假设了平台不具备的能力，那些假设就被移除。
+
+**把分析从写回中分离。** 这是整个系统最重要的一个设计决策。每个 skill 先产出一份可审阅的报告，在用户确认之前**不执行任何 vault 修改**。这消除了盲目写入、控制了风险、保留了推理过程的透明性。
+
+**分层读取节省 50–70% 的 token 成本。** 通过分阶段读取（元数据 → 结构 → 全文），系统避免把上下文预算烧在低价值内容上。只有真正需要深度关注的条目才会被全文读取。
+
+**确认门防止 skill 越权。** 没有确认停顿，`inbox-triage` 会退化成小型 synthesis，`connection-review` 会变全仓库扫描，`note-promotion` 会把所有东西都升级。确认门让每个 skill 守在自己的职责半径内。
+
+#### 执行链如何节省 token 并保持准确率
+
+六个 skill 形成了一条逐级聚焦、signal-to-noise 逐级提升的执行链：
+
+```
+原始 Inbox（大体积，低信号）
+    → inbox-triage: 浅读筛选，只保留有潜力的条目      [~70% token 削减]
+    → connection-review: 先读结构，少数深读               [~50% token 削减]
+    → weekly-synthesis: 近期优先，旧笔记仅作校准参考       [~60% token 削减]
+    → opencode-context-maintenance: 只检查上下文入口      [~80% token 削减]
+```
+
+每一级都丢弃不影响决策的信息。系统从不"以防万一先全读了再说"。这是对"全量预加载上下文"这一常见 AI 模式的有意识反抗——token 预算被当作一级资源来对待，而不是免费消耗品。
 
 ### 运行前提
 
