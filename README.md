@@ -3,7 +3,7 @@
 <details open>
 <summary><b>English</b> — Click to collapse</summary>
 
-A set of **6 production-ready skills** that turn OpenCode + Obsidian from a passive archive into a compounding knowledge system.
+A set of **7 production-ready skills** that turn OpenCode + Obsidian from a passive archive into a compounding knowledge system.
 
 Most Obsidian vaults fail the same way: content goes in, nothing comes back out. This skill system builds the missing feedback loop — not by promising automated AI magic, but by giving OpenCode a disciplined, layered workflow for processing, connecting, and synthesizing your notes.
 
@@ -127,7 +127,7 @@ Apache-2.0
 <details>
 <summary><b>中文</b> — 点击展开</summary>
 
-一套将 OpenCode + Obsidian 从被动存档变成**知识复利系统**的 **6 个生产级 skills**。
+一套将 OpenCode + Obsidian 从被动存档变成**知识复利系统**的 **7 个生产级 skills**。
 
 大多数 Obsidian vault 的失败模式都一样：内容进去，再也没有出来。这套技能系统补上了缺失的反馈回路——不是靠承诺自动 AI 魔法，而是给 OpenCode 一套有纪律的分层工作流，用于处理、连接和综合你的笔记。
 
@@ -135,7 +135,6 @@ Apache-2.0
 
 | 技能 | 角色 | 触发时机 |
 |---|---|---|
-| `obsidian-mcp` | Vault operation safety layer | Always (required by all other skills) |
 | `obsidian-mcp` | Vault 操作安全层 | 始终（所有 skill 的底层依赖） |
 | `inbox-triage` | 低摩擦收件箱分拣 | `Inbox/` 有未处理内容时 |
 | `connection-review` | 近期笔记关系发现 | 笔记累积但互相孤立时 |
@@ -203,7 +202,6 @@ Capture → Inbox → inbox-triage → connection-review → weekly-synthesis �
 ### 安装
 
 ```bash
-cp -r skills/obsidian-mcp ~/.opencode/skills/
 cp -r skills/obsidian-mcp ~/.opencode/skills/
 cp -r skills/inbox-triage ~/.opencode/skills/
 cp -r skills/connection-review ~/.opencode/skills/
