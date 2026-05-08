@@ -1,10 +1,7 @@
 # OpenCode + Obsidian Knowledge Workflow Skills
 
-[English](#english) · [中文](#chinese)
-
----
-
-## English
+<details open>
+<summary><b>English</b> — Click to collapse</summary>
 
 A set of **6 production-ready skills** that turn OpenCode + Obsidian from a passive archive into a compounding knowledge system.
 
@@ -84,9 +81,10 @@ This project is built upon and inspired by the work of others:
 
 Apache-2.0
 
----
+</details>
 
-## 中文
+<details>
+<summary><b>中文</b> — 点击展开</summary>
 
 一套将 OpenCode + Obsidian 从被动存档变成**知识复利系统**的 **6 个生产级 skills**。
 
@@ -165,3 +163,5 @@ cp -r skills/note-promotion ~/.opencode/skills/
 ### 协议
 
 Apache-2.0
+
+</details>
