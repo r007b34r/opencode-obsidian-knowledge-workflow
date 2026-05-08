@@ -11,6 +11,7 @@ Most Obsidian vaults fail the same way: content goes in, nothing comes back out.
 
 | Skill | Role | When It Runs |
 |---|---|---|
+| `obsidian-mcp` | Vault operation safety layer | Always (required by all other skills) |
 | `inbox-triage` | Low-friction inbox sorting | When `Inbox/` has unprocessed captures |
 | `connection-review` | Relationship discovery across recent notes | When notes accumulate but remain isolated |
 | `weekly-synthesis` | Week-level meaning extraction | When you want to understand what the week means |
@@ -77,6 +78,8 @@ At each stage, information that doesn't affect decisions is discarded. The syste
 ### Installation
 
 ```bash
+cp -r skills/obsidian-mcp ~/.opencode/skills/
+cp -r skills/obsidian-mcp ~/.opencode/skills/
 cp -r skills/inbox-triage ~/.opencode/skills/
 cp -r skills/connection-review ~/.opencode/skills/
 cp -r skills/weekly-synthesis ~/.opencode/skills/
@@ -132,6 +135,8 @@ Apache-2.0
 
 | 技能 | 角色 | 触发时机 |
 |---|---|---|
+| `obsidian-mcp` | Vault operation safety layer | Always (required by all other skills) |
+| `obsidian-mcp` | Vault 操作安全层 | 始终（所有 skill 的底层依赖） |
 | `inbox-triage` | 低摩擦收件箱分拣 | `Inbox/` 有未处理内容时 |
 | `connection-review` | 近期笔记关系发现 | 笔记累积但互相孤立时 |
 | `weekly-synthesis` | 周级意义提取 | 想知道这周变化意味着什么时 |
@@ -193,11 +198,13 @@ Capture → Inbox → inbox-triage → connection-review → weekly-synthesis �
 - [OpenCode](https://github.com/anomalyco/opencode) + `oh-my-opencode` 插件
 - [obsidian-mcp-server@3.1.5](https://github.com/cyanheads/obsidian-mcp-server) 已配置为 MCP server
 - Obsidian vault 已启用 [Local REST API 插件](https://github.com/coddingtonbear/obsidian-local-rest-api)
-- 已安装 `obsidian-mcp` skill 用于安全的 vault 操作
+- 已安装 `obsidian-mcp` skill（本项目 `skills/` 目录中包含）
 
 ### 安装
 
 ```bash
+cp -r skills/obsidian-mcp ~/.opencode/skills/
+cp -r skills/obsidian-mcp ~/.opencode/skills/
 cp -r skills/inbox-triage ~/.opencode/skills/
 cp -r skills/connection-review ~/.opencode/skills/
 cp -r skills/weekly-synthesis ~/.opencode/skills/
@@ -241,3 +248,5 @@ cp -r skills/note-promotion ~/.opencode/skills/
 Apache-2.0
 
 </details>
+
+
