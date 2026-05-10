@@ -7,10 +7,17 @@ metadata:
   version: "2.0.0"
   last-reviewed: "2026-05-10"
   owner: local
-  eval-status: needs-trigger-evals
+  eval-status: trigger-evals-defined
 ---
 
 # opencode-context-maintenance
+
+## Resource Files
+
+- `evals/trigger-cases.md`: context-drift trigger and near-miss cases.
+- `references/examples.md`: good/bad drift findings and host-reality examples.
+- `references/templates.md`: entry-point inventory and drift report templates.
+- `CHANGELOG.md`: stable context changes and drift correction history.
 
 ## Goal
 
