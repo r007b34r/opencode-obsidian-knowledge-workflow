@@ -49,11 +49,14 @@ Core principle: **The system is most fragile when one skill starts making decisi
 - Workaround: `list_notes` metadata + `get_note format: "document-map"` for structure; full read only at Stage 3
 - Short notes (< 500 chars): full read ≈ shallow read, acceptable compromise
 
-### 9. OpenCode host schema translation vs discriminated unions
-- `obsidian_patch_note` and `obsidian_append_to_note` are not reliably callable
-- Affected: tools with 2+ discriminated-union/nested-object parameters
-- Workaround: `obsidian_replace_in_note` for all surgical edits
-- If oh-my-opencode fixes the translation bug, update this boundary and restore original tools
+### 9. Hard MCP operation boundaries
+- `obsidian_patch_note`: forbidden on the verified OpenCode host because discriminated-union schema translation can trigger `MCP error -32602`
+- `obsidian_append_to_note`: forbidden for the same host-level schema reason
+- `obsidian_get_note format: "section"`: auxiliary only; long-section reads have produced schema-output mismatch (`data must have required property 'result'`)
+- `obsidian_write_note overwrite:true`: forbidden by default because it is a whole-file replacement, not a surgical edit
+- `obsidian_delete_note`: requires explicit user confirmation
+- Workaround: use `obsidian_replace_in_note` for surgical edits, `obsidian_manage_frontmatter` / `obsidian_manage_tags` for metadata, and `obsidian_write_note overwrite:false` for new files
+- If the OpenCode host fixes the translation bug, update this boundary only after re-running the MCP safety regression tests
 
 ## Summary
 

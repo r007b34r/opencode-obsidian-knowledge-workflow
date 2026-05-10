@@ -45,6 +45,26 @@ Core principle: **A skill is only truly usable if it still works under pressure.
 - synthesis interprets; context-maintenance persists
 - promotion doesn't substitute for any upstream skill
 
+## MCP Safety Regression Tests
+
+- No skill calls or recommends `obsidian_patch_note`
+- No skill calls or recommends `obsidian_append_to_note`
+- `obsidian_get_note format: "section"` is not used as the only verification path
+- Existing-note edits use `obsidian_replace_in_note`, `obsidian_manage_frontmatter`, or `obsidian_manage_tags`
+- New notes use `obsidian_write_note overwrite:false`
+- Destructive operations require explicit confirmation
+
+## Production Metadata Tests
+
+- Every skill has `license`, `compatibility`, and `metadata.version`
+- Every skill has `metadata.last-reviewed`
+- Every skill has `metadata.eval-status`
+- `skills-ref validate skills/<skill-name>` returns `Valid skill` for all seven skills
+
 ## Recommended Verification Order
 
-1. inbox-triage → 2. connection-review → 3. weekly-synthesis → 4. opencode-context-maintenance → 5. vault-health-feedback → 6. note-promotion
+1. `skills-ref validate` for all skills
+2. MCP safety regression tests
+3. inbox-triage → connection-review → weekly-synthesis → opencode-context-maintenance → vault-health-feedback → note-promotion
+4. cross-skill boundary tests
+5. no-skill baseline vs skill-assisted task comparison

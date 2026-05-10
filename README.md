@@ -38,7 +38,7 @@ This system was not designed in isolation — it was built through real, iterati
 
 **1. `@latest` is a trap.** The `obsidian-mcp-server@latest` tag pulled an incompatible version that broke every tool with `-32602` schema errors. The fix was to pin to `obsidian-mcp-server@3.1.5`. Every skill in this system now documents version pinning as a hard requirement.
 
-**2. The host schema translation bug.** OpenCode's MCP client layer incorrectly translates discriminated-union parameter schemas when a tool has two or more nested-object parameters. This makes `obsidian_patch_note` and `obsidian_append_to_note` completely unusable. All seven skills now use `obsidian_replace_in_note` as the sole surgical-editing workaround.
+**2. The host schema translation bug.** OpenCode's MCP client layer incorrectly translates discriminated-union parameter schemas when a tool has two or more nested-object parameters. This makes `obsidian_patch_note` and `obsidian_append_to_note` completely unusable on the verified host. All seven skills now use `obsidian_replace_in_note` as the surgical-editing workaround, and the hard operation constraints are documented in [`docs/production-hardening-update.md`](docs/production-hardening-update.md).
 
 **3. Claude-centric assumptions don't survive OpenCode reality.** The original inspiration article assumed a single AI host that "reads your vault and gets smarter over time." OpenCode is a multi-skill, multi-agent orchestration platform — context is distributed across skills, agents, MCP tools, and session state, not concentrated in one file.
 
