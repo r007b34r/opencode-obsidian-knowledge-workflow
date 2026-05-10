@@ -7,11 +7,18 @@ metadata:
   version: "2.0.0"
   last-reviewed: "2026-05-10"
   owner: local
-  eval-status: structure-validated
+  eval-status: regression-evals-defined
   requires: obsidian-mcp-server
 ---
 
 # Obsidian MCP Skill — Vault Operation Safety Layer
+
+## Resource Files
+
+- `evals/trigger-cases.md`: positive, negative, and regression cases for MCP safety routing.
+- `references/examples.md`: good/bad operation examples and failure recovery examples.
+- `references/templates.md`: completion report and safety regression templates.
+- `CHANGELOG.md`: maintenance log for host-reality changes and MCP failures.
 
 ## Production Rules
 
