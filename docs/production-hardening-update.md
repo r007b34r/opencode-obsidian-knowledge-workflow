@@ -8,7 +8,7 @@ The rewrite keeps the original project language convention: **all shipped skill 
 
 ## Updated Skills
 
-The following runtime skills were rewritten with production metadata, stronger trigger descriptions, explicit boundaries, exit criteria, gotchas, and minimal eval guidance:
+The following runtime skills were rewritten with production metadata, stronger trigger descriptions, explicit boundaries, exit criteria, gotchas, and eval-driven resource files:
 
 - `skills/obsidian-mcp/SKILL.md`
 - `skills/inbox-triage/SKILL.md`
@@ -29,7 +29,7 @@ metadata:
   version: "2.0.0"
   last-reviewed: "2026-05-10"
   owner: local
-  eval-status: needs-trigger-evals
+  eval-status: trigger-evals-defined
 ```
 
 `obsidian-mcp` also records the verified MCP server requirement:
@@ -51,6 +51,19 @@ These are production constraints discovered during real tool use. They should no
 | `obsidian_get_note format: section` | Caution | Long section reads produced `data must have required property 'result', data must NOT have additional properties` | Use `document-map` for structure and `content/full` for verification |
 | `obsidian_write_note overwrite:true` | Forbidden by default | Whole-file overwrite can destroy unrelated content | Use `overwrite:false` for new files; surgical replace for existing files |
 | `obsidian_delete_note` | Confirmation required | No MCP-level undo | List affected path and link risk, then wait for explicit confirmation |
+
+## v3 Resource Package Evolution
+
+The v3 release adds a production maintenance surface around every skill:
+
+- `evals/trigger-cases.md` for should-trigger, should-not-trigger, near-miss, and pass criteria.
+- `references/examples.md` for concrete good/bad behavior examples.
+- `references/templates.md` for reusable output skeletons.
+- `CHANGELOG.md` for real-world trigger misses, false positives, MCP failures, and boundary changes.
+
+This keeps `SKILL.md` concise while moving examples, evals, and maintenance history into dedicated files.
+
+See [`release-notes-v3-bilingual.md`](./release-notes-v3-bilingual.md) for the full English and Chinese release explanation.
 
 ## Engineering Contract Added to Workflow Skills
 

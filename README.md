@@ -5,6 +5,8 @@
 
 A set of **7 production-ready skills** that turn OpenCode + Obsidian from a passive archive into a compounding knowledge system.
 
+**Latest evolution:** v3 turns each skill into a production resource package with trigger evals, near-miss cases, good/bad examples, reusable templates, and changelogs. See [`docs/release-notes-v3-bilingual.md`](docs/release-notes-v3-bilingual.md).
+
 Most Obsidian vaults fail the same way: content goes in, nothing comes back out. This skill system builds the missing feedback loop — not by promising automated AI magic, but by giving OpenCode a disciplined, layered workflow for processing, connecting, and synthesizing your notes.
 
 ### Skills
@@ -120,6 +122,29 @@ This project is built upon and inspired by the work of others:
 ### License
 
 Apache-2.0
+
+</details>
+
+<details>
+<summary><b>中文</b> — 点击展开</summary>
+
+这是一套 **7 个生产级 OpenCode + Obsidian workflow skills**，目标是让 Obsidian 不再只是被动档案库，而是持续产生整理、连接、综合、复盘和可复用知识的系统。
+
+**最新进化：** v3 已把每个 skill 升级为生产资源包，包含 trigger eval、near-miss cases、正反示例、可复用模板和 changelog。完整中英文版本说明见 [`docs/release-notes-v3-bilingual.md`](docs/release-notes-v3-bilingual.md)。
+
+### 7 个 skills
+
+| Skill | 角色 | 何时使用 |
+|---|---|---|
+| `obsidian-mcp` | Vault 操作安全层 | 所有 Obsidian MCP 操作的底座 |
+| `inbox-triage` | Inbox / capture 初筛 | 处理未整理素材时 |
+| `connection-review` | 近期笔记关系发现 | 找链接、模式、矛盾时 |
+| `weekly-synthesis` | 时间窗口综合 | 提炼本周/近期意义时 |
+| `opencode-context-maintenance` | 上下文漂移维护 | vault、配置、宿主现实不一致时 |
+| `vault-health-feedback` | vault 健康诊断 | 判断系统是否变成被动档案库时 |
+| `note-promotion` | 稳定知识晋升 | 将有价值素材升级成可复用笔记时 |
+
+核心原则：**先分析，后确认，再写回；先读，后改，改后读回验证。**
 
 </details>
 
