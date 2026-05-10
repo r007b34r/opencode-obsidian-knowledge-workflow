@@ -7,10 +7,17 @@ metadata:
   version: "2.0.0"
   last-reviewed: "2026-05-10"
   owner: local
-  eval-status: needs-trigger-evals
+  eval-status: trigger-evals-defined
 ---
 
 # weekly-synthesis
+
+## Resource Files
+
+- `evals/trigger-cases.md`: synthesis trigger cases and near-miss cases.
+- `references/examples.md`: good/bad thesis, contradiction, and action examples.
+- `references/templates.md`: synthesis report and optional note templates.
+- `CHANGELOG.md`: real synthesis failure modes and prompt-boundary updates.
 
 ## Goal
 
