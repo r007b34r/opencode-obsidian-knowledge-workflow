@@ -7,10 +7,17 @@ metadata:
   version: "2.0.0"
   last-reviewed: "2026-05-10"
   owner: local
-  eval-status: needs-trigger-evals
+  eval-status: trigger-evals-defined
 ---
 
 # note-promotion
+
+## Resource Files
+
+- `evals/trigger-cases.md`: promotion trigger and near-miss cases.
+- `references/examples.md`: good/bad promotion decisions for each note type.
+- `references/templates.md`: promoted-note skeletons and integration templates.
+- `CHANGELOG.md`: real over-promotion, under-promotion, and integration failures.
 
 ## Goal
 
