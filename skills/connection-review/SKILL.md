@@ -7,10 +7,17 @@ metadata:
   version: "2.0.0"
   last-reviewed: "2026-05-10"
   owner: local
-  eval-status: needs-trigger-evals
+  eval-status: trigger-evals-defined
 ---
 
 # connection-review
+
+## Resource Files
+
+- `evals/trigger-cases.md`: relationship-review trigger and near-miss cases.
+- `references/examples.md`: good/bad link, pattern, and contradiction examples.
+- `references/templates.md`: evidence schema and output report templates.
+- `CHANGELOG.md`: real link-quality failures and boundary adjustments.
 
 ## Goal
 
