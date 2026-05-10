@@ -7,10 +7,17 @@ metadata:
   version: "2.0.0"
   last-reviewed: "2026-05-10"
   owner: local
-  eval-status: needs-trigger-evals
+  eval-status: trigger-evals-defined
 ---
 
 # inbox-triage
+
+## Resource Files
+
+- `evals/trigger-cases.md`: should-trigger, should-not-trigger, and near-miss prompts.
+- `references/examples.md`: good/bad triage examples and decision examples.
+- `references/templates.md`: batch output, single-item output, and confirmation templates.
+- `CHANGELOG.md`: real trigger misses, false triggers, and triage failure notes.
 
 ## Goal
 
