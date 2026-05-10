@@ -1,64 +1,91 @@
 ---
 name: weekly-synthesis
-description: Use when recent Obsidian notes need week-level synthesis to surface an emerging thesis, key contradictions or gaps, and the single most valuable next action or question.
+description: "Load when recent Obsidian notes need time-window synthesis: an emerging thesis, meaningful contradictions, gaps, exactly one next action, exactly one next question, and follow-up note suggestions. Use for week-level or user-specified-period meaning-making. Do not use for inbox triage, link-only review, project status reporting, or direct note promotion."
+license: MIT
+compatibility: opencode; requires obsidian-mcp for vault operations
+metadata:
+  version: "2.0.0"
+  last-reviewed: "2026-05-10"
+  owner: local
+  eval-status: needs-trigger-evals
 ---
 
 # weekly-synthesis
 
-## Overview
+## Goal
 
-Week-level interpretation skill for OpenCode + Obsidian knowledge workflows.
+Turn recent Obsidian note activity into a stable interpretation: emerging thesis, contradictions, gaps, exactly one action, exactly one question, and follow-up note suggestions.
 
-Core principle: **synthesize meaning, not activity. Use recent changes as the main signal and older notes only as background calibration.**
+Core principle: **synthesize meaning, not activity.**
 
-Turns recent note activity into an emerging thesis, contradictions/gaps, one action, one question, and follow-up note suggestions.
+## Required Companion Skill
 
-## When to Use
+For any vault operation, follow `obsidian-mcp`: do not use `obsidian_patch_note`, do not use `obsidian_append_to_note`, treat `get_note section` as auxiliary only, and verify every write through readback.
 
-Use when recent notes orbit the same topic or when scattered insight needs a stable frame. Do **not** use for first-pass inbox sorting (`inbox-triage`), relationship discovery only (`connection-review`), or project status reports.
+## Trigger Boundary
 
-## Core Pattern
+Use this skill when the user asks for a weekly synthesis, what recent notes mean, an emerging thesis, or one most valuable next action/question. Default window is seven days unless the user specifies another period.
 
-Four-part interpretive pass, **analysis-only** by default:
+Do not use this skill for:
 
-1. **Emerging Thesis** — the strongest week-level understanding now forming
-2. **Contradictions** — meaningful tensions (new vs old claims, goal vs method)
-3. **Gaps** — missing perspectives, unanswered questions
-4. **One Action / One Question** — exactly one of each, not a list
-
-Then: **Follow-up note suggestions**
-
-Write a synthesis note only after explicit user approval.
+- raw material routing -> `inbox-triage`;
+- link-only or relationship review -> `connection-review`;
+- project status reporting;
+- promoting the result into a stable note -> hand off to `note-promotion` after analysis.
 
 ## Input Scope
 
-Recent 7 days of notes plus a small, justified set of older background notes.
+Default: recent seven days. If the user says "recent", "this research round", or "this month", use that semantic window.
 
-## Read shallow first: `obsidian_get_note format: document-map` for structure, `format: full` only when confirming a thesis or tension.
+Read strategy:
 
-## Output Format
+1. Identify notes in the time window.
+2. Read `document-map` first to understand theme distribution.
+3. Deep-read only notes that support thesis, contradiction, or gap claims.
+4. Use older notes only for calibration, not as the primary signal.
 
-Begin with summary (what was reviewed, themes, stability). Then: **Emerging Thesis** · **Contradictions** · **Gaps** · **One Action** · **One Question** · **Follow-up Note Suggestions**.
+## Synthesis Structure
 
-## Tool Constraints
+1. **Emerging thesis**: one claim plus supporting evidence.
+2. **Contradictions**: only tensions that matter for reasoning.
+3. **Gaps**: missing perspective, evidence, decision, or experiment.
+4. **One action**: exactly one highest-value next move.
+5. **One question**: exactly one question worth preserving.
+6. **Follow-up note suggestions**: optional downstream notes.
 
-⚠️ `obsidian_patch_note` and `obsidian_append_to_note` are not reliably callable. Use `obsidian_replace_in_note` for edits, `obsidian_write_note` for new file creation.
+## Output Contract
 
-## Red Flags
+```text
+Scope: time window, note count, deep-read count
+Theme stability: low/medium/high
+Emerging thesis: ...
+Contradictions: ...
+Gaps: ...
+One action: ...
+One question: ...
+Follow-up note suggestions: ...
+```
 
-Stop if you: summarize activity instead of extracting meaning · scan the whole vault · treat weak patterns as strong theses · give five actions instead of one · write synthesis before confirmation.
+Do not write a synthesis note by default. After approval, create with `obsidian_write_note overwrite:false` and read back.
 
-## Common Mistakes
+## Exit Criteria
 
-| Mistake | Correction |
-|---|---|
-| Turning synthesis into recap | Ask what understanding is forming, not what happened |
-| Using too much history | Keep older notes as calibration, not primary input |
-| Calling everything a contradiction | Reserve for meaningful tension |
-| Returning many actions | Force exactly one action and one question |
+- Output is not a recap.
+- Exactly one action and exactly one question.
+- Thesis has evidence; contradictions are not forced.
+- Any written note has been read back and verified.
 
-## Related Skills
+## Gotchas
 
-**REQUIRED**: `obsidian-mcp` for vault operation safety.
+| Mistake | Consequence | Correction |
+|---|---|---|
+| Recapping activity | No new understanding | Extract thesis and gaps |
+| Returning many actions | User loses focus | Force one action |
+| Letting old notes dominate | Recent signal disappears | Use older notes only as calibration |
+| Writing before confirmation | Unauthorized vault changes | Ask first, then verify |
 
-After: `connection-review`. Before: `opencode-context-maintenance`. Feed into: `note-promotion`.
+## Minimal Eval Set
+
+Should trigger: weekly synthesis, synthesize recent notes into a thesis, identify one next action, extract one question from a research round.
+
+Should not trigger: process inbox, only suggest wikilinks, write a project status report, promote one note.

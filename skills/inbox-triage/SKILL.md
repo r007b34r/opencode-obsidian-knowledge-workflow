@@ -1,90 +1,104 @@
 ---
 name: inbox-triage
-description: Use when an Obsidian inbox contains raw captures, fleeting notes, or unprocessed material that needs low-friction triage to decide what is worth promoting, what should stay, and what can be archived — without full-reading every item.
+description: Load when an Obsidian inbox, capture folder, raw note list, fleeting notes, or unprocessed material needs first-pass routing into keep, promote, project, archive, or deep-read decisions. Use for low-friction triage before synthesis. Do not use for relationship analysis, weekly synthesis, vault health diagnosis, or writing final polished notes.
+license: MIT
+compatibility: opencode; requires obsidian-mcp for vault operations
+metadata:
+  version: "2.0.0"
+  last-reviewed: "2026-05-10"
+  owner: local
+  eval-status: needs-trigger-evals
 ---
 
 # inbox-triage
 
-## Overview
+## Goal
 
-First-pass sorting skill for OpenCode + Obsidian knowledge workflows.
+Perform first-pass routing for an Obsidian inbox, capture folder, raw notes, fleeting notes, or unprocessed material. Core principle: **read shallow first, escalate selectively, and separate analysis from write-back.**
 
-Core principle: **read shallow by default, escalate selectively, and separate analysis from write-back.**
+This is the intake layer, not the synthesis layer and not the final note-writing layer.
 
-Prevents two failure modes: everything stays raw forever, or everything gets over-processed too early.
+## Required Companion Skill
 
-## When to Use
+For any vault operation, follow `obsidian-mcp`. In particular:
 
-Use when `Inbox/` has unprocessed captures and token budget matters.
+- Do not use `obsidian_patch_note`.
+- Do not use `obsidian_append_to_note`.
+- Do not rely on `obsidian_get_note format: section` as the only verification path.
+- Write-back must use `obsidian_replace_in_note`, `obsidian_write_note overwrite:false`, or `obsidian_manage_*`, followed by readback verification.
 
-Do **not** use for cross-note relationship analysis, weekly synthesis, or write-heavy restructuring.
+## Trigger Boundary
 
-## Core Pattern
+Use this skill when the user asks to process an inbox, sort captures, route raw notes, decide what is worth promoting, or decide what can be archived.
 
-Three-stage funnel, **analysis-only** by default:
+Do not use this skill for:
 
-1. scope the inbox (`obsidian_list_notes`)
-2. read shallow first (`obsidian_get_note format: document-map` for headings, `format: full` only for deep-read candidates)
-3. escalate only where necessary
+- cross-note relationship analysis -> `connection-review`;
+- week-level meaning extraction -> `weekly-synthesis`;
+- stable-note creation -> `note-promotion`;
+- system health diagnosis -> `vault-health-feedback`.
 
-Stop for confirmation before any write-back.
+## Input Scope
 
-## Decision Outputs
+Default scope is `Inbox/` or the user-specified capture path. Do not scan the whole vault.
+
+Read strategy:
+
+1. Use `obsidian_list_notes` to identify candidates.
+2. Read `document-map` first; short notes may be read as `content/full`.
+3. Deep-read only when the routing decision is genuinely uncertain.
+
+## Decisions
 
 | Decision | Use when |
 |---|---|
-| `keep-in-inbox` | too raw, not yet ready |
-| `promote-to-note` | reusable concept or stable knowledge unit |
-| `promote-to-idea` | personal thought, question, or observation |
-| `move-to-project` | mainly useful inside active work |
-| `archive-or-ignore` | trivial, redundant, stale |
-| `needs-deep-read` | shallow evidence is insufficient |
+| `keep-in-inbox` | Too raw, too early, or still incubating |
+| `promote-to-note` | Stable, reusable, and independent enough to become a knowledge unit |
+| `promote-to-idea` | Personal observation, question, or framing worth preserving |
+| `move-to-project` | Mainly useful inside an active project |
+| `archive-or-ignore` | Low-density, redundant, stale, or unlikely to return value |
+| `needs-deep-read` | Shallow evidence is insufficient but potential value is high |
 
-## Output Format
+## Evaluation Dimensions
 
-Per item: **Decision** · **Reason** · **Next action**
+- **Reusability**: will this matter again?
+- **Current relevance**: does it support an active project?
+- **Cognitive density**: does it contain a real claim, question, or insight?
+- **Connection potential**: can it connect to existing themes?
 
-Batch mode: begin with summary (total / shallow-read / deep-read / promoted / archived / uncertain).
+## Output Contract
 
-## Evaluation Criteria
+For batches, start with: total / shallow-read / deep-read / promote / archive / uncertain.
 
-Judge using four dimensions (combined pattern, not numeric precision):
-- **Reusability** — likely to matter again?
-- **Current project relevance** — directly useful to active work?
-- **Cognitive density** — contains a real claim, question, or insight?
-- **Connection potential** — likely to connect to existing notes or themes?
+For each item:
 
-Decision guide:
-- high reusability + high density → `promote-to-note`
-- high project relevance + moderate density → `move-to-project`
-- low density + low reuse + low connection → `archive-or-ignore`
-- emerging personal thought → `promote-to-idea`
-- promising but unclear → `needs-deep-read`
+```text
+Path: ...
+Decision: ...
+Reason: ...
+Next action: ...
+Write-back needed: yes/no; if yes, ask for confirmation first
+```
 
-## Tool Constraints
+Default mode is analysis-only. Before write-back, list exact intended changes and wait for user confirmation.
 
-⚠️ `obsidian_patch_note` and `obsidian_append_to_note` are not reliably callable (host schema translation bug). Use `obsidian_replace_in_note` for all surgical edits. Use `obsidian_write_note` for new file creation only.
+## Exit Criteria
 
-For short notes (< ~500 chars), full read is functionally equivalent to shallow read and is acceptable.
+- Every candidate has a routing decision or `needs-deep-read`.
+- Triage has not turned into synthesis.
+- Any write-back has passed `obsidian-mcp` readback verification.
 
-## Red Flags
+## Gotchas
 
-Stop if you: full-read everything by default · promote every interesting fragment · do synthesis during triage · write back without confirmation · pretend uncertain items are clearly classified.
+| Mistake | Consequence | Correction |
+|---|---|---|
+| Full-reading everything by default | Token waste and premature over-processing | Read shallow first |
+| Promoting anything interesting | Hollow notes accumulate | Require stability and reuse value |
+| Summarizing during triage | Intake becomes synthesis | Output routing + reason + next action only |
+| Archiving aggressively from shallow reads | Valuable material may be lost | Use `needs-deep-read` when uncertainty matters |
 
-## Common Mistakes
+## Minimal Eval Set
 
-| Mistake | Correction |
-|---|---|
-| Full-reading everything | Start shallow, escalate only when needed |
-| Turning triage into synthesis | Limit to routing + reasons + next actions |
-| Promoting every good fragment | Ask: stable, reusable, project-relevant enough? |
-| Archiving too aggressively from shallow reads | Use `needs-deep-read` when ambiguity is meaningful |
-| Mixing analysis and modification | Default to analysis-only |
+Should trigger: process Inbox, sort raw notes, decide which captures are worth promotion, decide what to archive.
 
-## Related Skills
-
-**REQUIRED**: `obsidian-mcp` for vault operation safety.
-
-Feed into: `connection-review`, `note-promotion`, `weekly-synthesis`.
-
-This skill is the **gatekeeper**, not the finisher.
+Should not trigger: write a weekly synthesis, analyze note relationships, turn one stable idea into a final note, diagnose vault health.

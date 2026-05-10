@@ -1,70 +1,118 @@
 ---
 name: note-promotion
-description: Use when a capture, idea, relationship finding, or weekly synthesis result has proven valuable enough to be upgraded into a more stable, reusable, and linkable knowledge note — without over-promoting weak material.
+description: Load when a capture, idea, triage result, connection finding, or synthesis result has proven stable enough to become a reusable, independent, linkable Obsidian note. Use to decide whether and how to promote material into reference, idea, project, topic, synthesis, contradiction, or question notes. Do not use for first-pass triage, link discovery, or weekly synthesis itself.
+license: MIT
+compatibility: opencode; requires obsidian-mcp for vault operations
+metadata:
+  version: "2.0.0"
+  last-reviewed: "2026-05-10"
+  owner: local
+  eval-status: needs-trigger-evals
 ---
 
 # note-promotion
 
-## Overview
+## Goal
 
-Knowledge-upgrade skill for OpenCode + Obsidian knowledge workflows.
+Decide whether material from a raw capture, idea, triage result, connection finding, or synthesis result should be upgraded into a stable, reusable, linkable Obsidian note.
 
-Core principle: **promote selectively. A note is healthier when it becomes more stable, reusable, and linkable — not merely more polished.**
+Core principle: **promote selectively. A promoted note must become more stable, reusable, and linkable than the source material.**
 
-Prevents two failure modes: never promoting enough (insight stays raw), and promoting too aggressively (vault fills with hollow notes).
+## Required Companion Skill
 
-## When to Use
+For any vault operation, follow `obsidian-mcp`: do not use `obsidian_patch_note`, do not use `obsidian_append_to_note`, treat `get_note section` as auxiliary only, and verify every write through readback.
 
-Use when material from inbox-triage, ideas, connection-review, or weekly-synthesis has shown clear value and deserves a more durable form.
+## Trigger Boundary
 
-Do **not** use for first-pass sorting (`inbox-triage`), relationship discovery (`connection-review`), or weekly interpretation (`weekly-synthesis`).
+Use this skill when the user asks to upgrade material into a formal note, decide whether a finding is worth preserving, turn synthesis output into a stable note, or create a linkable knowledge unit.
 
-## Core Pattern
+Do not use this skill for:
 
-Four-step decision, **analysis-first** by default:
+- first-pass inbox routing -> `inbox-triage`;
+- note relationship discovery -> `connection-review`;
+- week-level meaning extraction -> `weekly-synthesis`;
+- vault system health diagnosis -> `vault-health-feedback`.
 
-1. **Decide whether promotion is warranted** (stability, reusability, independence, connection value, compression benefit)
-2. **Choose target note type**
-3. **Define minimum promotion strategy** (what to preserve, clarify, remove)
-4. **Specify integration targets** (where the promoted note should reconnect)
+## Promotion Test
 
-Promote only when the promoted form will be **more useful than the current form**.
+Promotion requires at least three of the following:
+
+- **Stable**: not just a transient fragment.
+- **Reusable**: likely to help future work.
+- **Independent**: understandable outside the original capture.
+- **Connectable**: can link to an existing theme, project, or question.
+- **Compression benefit**: clearer, shorter, or more retrievable than the source.
+
+If the material fails the test, recommend waiting, keeping raw, returning to triage, or archiving.
 
 ## Target Note Types
 
 | Type | Use when |
 |---|---|
-| `reference-note` | stable external insight or concept worth reusing |
-| `idea-note` | personal thought or framing worth preserving |
-| `project-note` | knowledge mainly useful inside active work |
-| `topic-note` | several related notes need a stronger conceptual home |
-| `synthesis-note` | a cross-note understanding deserves durable articulation |
-| `contradiction-note` | an important tension deserves explicit framing |
-| `question-note` | the question itself is worth preserving and returning to |
+| `reference-note` | Stable external knowledge or method |
+| `idea-note` | Personal framing, observation, or judgment |
+| `project-note` | Mainly useful inside active work |
+| `topic-note` | Multiple notes need a conceptual home |
+| `synthesis-note` | Cross-note understanding should be preserved |
+| `contradiction-note` | An important tension deserves explicit framing |
+| `question-note` | The question itself is worth returning to |
 
-## Output Format
+## Output Contract
 
-Per candidate: **Promotion Decision** · **Target Type** · **Reason** · **Promotion Strategy** · **Follow-up Integration**
+```text
+Promotion decision: promote / wait / keep raw / archive
+Target type: ...
+Reason: ...
+Minimum promotion strategy: preserve / clarify / remove
+Proposed title: ...
+Tags: ...
+Links: ...
+Write-back plan: create or merge; wait for confirmation
+```
 
-## Tool Constraints
+## Write Template
 
-⚠️ `obsidian_patch_note` and `obsidian_append_to_note` are not reliably callable. Use `obsidian_replace_in_note` for rewrites, `obsidian_write_note` for new promoted notes.
+After user approval, a new promoted note should include at least:
 
-## Red Flags
+```markdown
+---
+tags:
+  - ...
+created: YYYY-MM-DD
+type: ...
+source: ...
+---
+# Title
 
-Stop if you: promote every promising fragment · use promotion as a synonym for editing · rewrite too much · force a note type before the material is stable · polish weak content into fake clarity.
+## Claim / Idea
 
-## Common Mistakes
+## Evidence / Context
 
-| Mistake | Correction |
-|---|---|
-| Promoting too early | Wait until stable, independent, or recurrent enough |
-| Treating every good idea as a note | Ask whether the note form creates real retrieval benefit |
-| Overwriting original insight voice | Preserve strong original phrasing |
-| Promoting without integration | Always specify where the promoted note should reconnect |
+## Implications
 
-## Related Skills
+## Links
+```
 
-**REQUIRED**: `obsidian-mcp` for vault operation safety.
+Create new notes with `obsidian_write_note overwrite:false`. If the target exists, merge with `obsidian_replace_in_note` and read back.
 
-Usable after: `inbox-triage`, `connection-review`, `weekly-synthesis`. This is the **stabilization layer**, not the intake layer.
+## Exit Criteria
+
+- Promotion decision is explicit.
+- Weak material has not been polished into fake clarity.
+- Integration targets are named.
+- If written, the new/updated note exists, frontmatter is correct, and key content reads back correctly.
+
+## Gotchas
+
+| Mistake | Consequence | Correction |
+|---|---|---|
+| Promoting every good idea | Hollow vault growth | Require stability, reuse, independence, and links |
+| Treating promotion as polishing | No structural knowledge benefit | Decide whether promotion is warranted first |
+| Overwriting source voice | Original insight is lost | Preserve strong source phrasing or source links |
+| Creating without links | New note becomes an island | Require integration targets |
+
+## Minimal Eval Set
+
+Should trigger: promote a finding into a formal note, create a topic note, preserve a contradiction note, stabilize synthesis output.
+
+Should not trigger: sort inbox, find links, write weekly synthesis, diagnose vault health.

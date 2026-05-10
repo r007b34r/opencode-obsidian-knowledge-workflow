@@ -1,66 +1,88 @@
 ---
 name: connection-review
-description: Use when recent Obsidian notes need relationship analysis to surface likely links, emerging patterns, contradictions, and follow-up note opportunities — without scanning the entire vault.
+description: "Load when recent Obsidian notes, newly promoted notes, or a small set of selected notes need relationship analysis: likely links, repeated patterns, meaningful contradictions, and follow-up note opportunities. Use for local graph review without scanning the whole vault. Do not use for first-pass inbox triage, weekly synthesis, or vault health diagnosis."
+license: MIT
+compatibility: opencode; requires obsidian-mcp for vault operations
+metadata:
+  version: "2.0.0"
+  last-reviewed: "2026-05-10"
+  owner: local
+  eval-status: needs-trigger-evals
 ---
 
 # connection-review
 
-## Overview
+## Goal
 
-Relationship-analysis skill for OpenCode + Obsidian knowledge workflows.
+Review relationships across recent or user-selected Obsidian notes: candidate links, pattern signals, contradiction signals, and follow-up note opportunities.
 
-Core principle: **start with the most local and actionable relationships, then surface higher-order patterns and tensions only where evidence supports them.**
+Core principle: **start from local, actionable relationships; surface higher-order patterns only when evidence supports them.**
 
-Examines recently changed notes plus a small number of relevant older notes. Not a full-vault graph engine, not a weekly synthesis engine.
+## Required Companion Skill
 
-## When to Use
+For any vault operation, follow `obsidian-mcp`: do not use `obsidian_patch_note`, do not use `obsidian_append_to_note`, treat `get_note section` as auxiliary only, and verify every write through readback.
 
-Use when recent notes are accumulating but remain isolated, or when the user suspects themes are emerging but doesn't want full synthesis yet.
+## Trigger Boundary
 
-Do **not** use for first-pass inbox sorting (`inbox-triage`), weekly synthesis, or full-vault restructuring.
+Use this skill when the user asks what recent notes connect to, which notes should link, what patterns are emerging, or whether there are meaningful contradictions.
 
-## Core Pattern
+Do not use this skill for:
 
-Three-layer relationship pass, **analysis-only** by default:
+- raw inbox sorting -> `inbox-triage`;
+- week-level thesis and one action -> `weekly-synthesis`;
+- vault system health diagnosis -> `vault-health-feedback`;
+- upgrading material into stable notes -> `note-promotion`.
 
-1. **Link candidates** — actionable note-to-note or note-to-project connections
-2. **Pattern signals** — repeated themes or converging problems
-3. **Contradiction signals** — meaningful tensions (new vs old, goal vs method)
+## Input Sampling
 
-Then: **Follow-up note suggestions**
+Default scope: recently created/modified notes or a user-provided set.
 
-Stop for confirmation before any write-back. Only lightweight internal links may be written after approval.
+Target size: 5-15 primary notes plus a small number of supporting background notes. Do not scan the whole vault by default.
 
-## Input Scope
+Process:
 
-Start with recently created/modified notes plus a small supporting set of older notes. Do **not** scan the whole vault by default.
+1. Use `list_notes` or `search_notes` to identify the recent/specified set.
+2. Read `document-map` first; use `content/full` only when evidence is needed.
+3. Read older notes only to verify a relationship.
 
-## Output Structure
+## Review Layers
 
-- **Connection Suggestions** — concrete like `[[A]] should link to [[B]]`
-- **Pattern Findings** — repeated themes, brief and specific
-- **Contradiction Findings** — only tensions that matter for reasoning
-- **Follow-up Note Suggestions** — synthesis note, contradiction note, topic index, etc.
+1. **Link candidates**: explicit note-to-note or note-to-project relationships.
+2. **Pattern signals**: repeated themes, problems, or methods.
+3. **Contradiction signals**: new vs old claims, goal vs method, assumption vs evidence.
+4. **Follow-up note suggestions**: synthesis, topic, contradiction, or question notes.
 
-## Tool Constraints
+## Output Contract
 
-⚠️ `obsidian_patch_note` and `obsidian_append_to_note` are not reliably callable. Use `obsidian_replace_in_note` for all surgical edits. Use `obsidian_write_note` for new file creation only.
+```text
+Reviewed scope: ...
+Connection suggestions: A -> B; reason; evidence; write-back suggested?
+Pattern findings: ...
+Contradiction findings: ...
+Follow-up note suggestions: ...
+Uncertain items: relationships requiring more evidence
+```
 
-## Red Flags
+Default mode is analysis-only. Write lightweight wikilinks only after explicit user approval, using `obsidian_replace_in_note` and readback verification.
 
-Stop if you: scan the whole vault by default · confuse weak thematic resemblance with real connection · turn every overlap into a link · write links before confirmation · present speculative contradictions as confirmed conflicts.
+## Exit Criteria
 
-## Common Mistakes
+- Every connection suggestion names both endpoints and evidence.
+- Patterns and contradictions are not based on keyword overlap alone.
+- The whole vault was not scanned.
+- Any written link has been read back and verified.
 
-| Mistake | Correction |
-|---|---|
-| Reviewing the whole vault | Start from recent notes, add only a small supporting set |
-| Treating shared keywords as real connection | Look for meaningful conceptual or project-level overlap |
-| Doing synthesis too early | Limit to links, patterns, contradictions, and follow-up suggestions |
-| Writing links back immediately | Keep default mode analysis-only |
+## Gotchas
 
-## Related Skills
+| Mistake | Consequence | Correction |
+|---|---|---|
+| Treating shared keywords as real links | Noisy graph | Require conceptual, project, or evidence relationship |
+| Turning review into whole-vault graphing | Scope explosion | Start from recent/specified notes |
+| Synthesizing too early | Takes over `weekly-synthesis` | Stop at links, patterns, contradictions, follow-ups |
+| Writing links immediately | Unauthorized vault edits | Ask first, then verify |
 
-**REQUIRED**: `obsidian-mcp` for vault operation safety.
+## Minimal Eval Set
 
-After: `inbox-triage`. Before: `weekly-synthesis`. Feed into: `note-promotion`.
+Should trigger: find recent-note connections, suggest wikilinks, identify repeated patterns, surface contradictions.
+
+Should not trigger: process inbox, write weekly synthesis, diagnose vault health, expand one idea into a final note.
