@@ -7,10 +7,17 @@ metadata:
   version: "2.0.0"
   last-reviewed: "2026-05-10"
   owner: local
-  eval-status: needs-trigger-evals
+  eval-status: trigger-evals-defined
 ---
 
 # vault-health-feedback
+
+## Resource Files
+
+- `evals/trigger-cases.md`: health-diagnosis trigger and near-miss cases.
+- `references/examples.md`: good/bad workflow, cognitive, and structural findings.
+- `references/templates.md`: health report and intervention templates.
+- `CHANGELOG.md`: health-diagnosis failures and metric changes.
 
 ## Goal
 
