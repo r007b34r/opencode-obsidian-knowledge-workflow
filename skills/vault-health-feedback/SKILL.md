@@ -1,90 +1,142 @@
 ---
 name: vault-health-feedback
-description: Load when an Obsidian knowledge workflow may be becoming a passive archive and needs bounded diagnosis of workflow health, cognitive return, structural friction, risk signals, and the highest-leverage repair. Use for system health feedback before cleanup. Do not use for inbox triage, link review, weekly synthesis, or direct restructuring.
-license: MIT
-compatibility: opencode; requires obsidian-mcp for vault operations
+description: >
+  Diagnose whether an Obsidian knowledge workflow is producing cognitive return
+  or becoming a passive archive. Load when user says vault feels archival,
+  knowledge is not returning, system health should be diagnosed, or highest-leverage
+  repair is unclear. Do NOT use for inbox triage, link review, weekly synthesis,
+  or direct restructuring.
+license: Apache-2.0
+compatibility:
+  runtime: opencode
+  requires: [obsidian-mcp]
+  verified-host: "obsidian-mcp-server@3.1.5 / Windows / 2026-05-10"
 metadata:
-  version: "2.0.0"
-  last-reviewed: "2026-05-10"
-  owner: local
-  eval-status: trigger-evals-defined
+  version: "4.0.0"
+  last-reviewed: "2026-05-14"
+  owner: r007b34r
+  eval-status: edd-validated
+  token-budget: "~2300 tokens"
+triggers:
+  keywords: [health, archival, passive, stale, broken workflow, 健康, 诊断, 归档化]
+  contexts: ["obsidian vault may be becoming passive archive"]
+  negative: [triage, inbox, sort, links, connections, synthesis, weekly, promote, create note]
+boundaries:
+  owns: [workflow health diagnosis, cognitive return assessment, structural friction detection]
+  delegates_to:
+    inbox-triage: "diagnosis reveals inbox backlog as root cause"
+    opencode-context-maintenance: "diagnosis reveals context drift"
+  never_absorbs: [inbox routing, relationship analysis, synthesis, promotion, direct restructuring]
+continuations:
+  on_success:
+    - skill: inbox-triage
+      condition: "root cause is inbox backlog"
+    - skill: opencode-context-maintenance
+      condition: "root cause is context drift"
+  on_failure:
+    - skill: opencode-context-maintenance
+      condition: "vault paths inaccessible, possible config issue"
+  escalation:
+    - human
+      condition: "vault is deeply archival, needs structural redesign"
 ---
 
 # vault-health-feedback
 
-## Resource Files
+## Constraints
 
-- `evals/trigger-cases.md`: health-diagnosis trigger and near-miss cases.
-- `references/examples.md`: good/bad workflow, cognitive, and structural findings.
-- `references/templates.md`: health report and intervention templates.
-- `CHANGELOG.md`: health-diagnosis failures and metric changes.
+- NEVER scan whole vault; sample strategically
+- NEVER give more than 3 recommendations
+- NEVER equate structural mess with system failure (check workflow first)
+- NEVER repair, move, or restructure without explicit confirmation
+- Check layers in order: workflow → cognitive → structural
 
-## Goal
+## Companion Skill
 
-Diagnose whether an Obsidian knowledge system is still producing knowledge flow and cognitive return, rather than judging only whether folders look tidy.
-
-Core principle: **check workflow health first, cognitive return second, structure third.**
-
-## Required Companion Skill
-
-For any vault operation, follow `obsidian-mcp`: do not use `obsidian_patch_note`, do not use `obsidian_append_to_note`, treat `get_note section` as auxiliary only, and verify every write through readback.
+All vault operations follow `obsidian-mcp`. Forbidden: `obsidian_patch_note`, `obsidian_append_to_note`. Verify every write through readback.
 
 ## Trigger Boundary
 
-Use this skill when the user says the vault feels archival, knowledge is not returning, system health should be diagnosed, or the highest-leverage repair is unclear.
+Use when: vault feels archival, knowledge not returning, system health diagnosis needed, highest-leverage repair unclear.
 
-Do not use this skill for:
+Do NOT use for:
+- Inbox routing → `inbox-triage`
+- Recent-note relationships → `connection-review`
+- Week-level synthesis → `weekly-synthesis`
+- Direct restructuring before diagnosis
 
-- inbox routing -> `inbox-triage`;
-- recent-note relationships -> `connection-review`;
-- week-level synthesis -> `weekly-synthesis`;
-- direct restructuring before diagnosis.
+## Procedure
 
-## Health Model
+### Phase 1: Workflow Layer (always check first)
+1. `obsidian_list_notes path:"Inbox/"` → inbox freshness (items, age)
+2. `obsidian_search_notes query:"type: synthesis"` → synthesis frequency
+3. Check for recent triage/review/promotion activity
+4. Score: active / stale / dead
 
-1. **Workflow health**: inbox processing, reviews, syntheses, context refresh.
-2. **Cognitive health**: notes return to later thinking, themes recur, older knowledge gets reused.
-3. **Structural health**: orphan zones, fragmentation, hollow clusters, tag noise.
+### Phase 2: Cognitive Layer (only if workflow is active or stale)
+1. Sample 5-10 recent notes for reuse signals (links back, references)
+2. Check if themes recur across time windows
+3. Look for notes that were never revisited after creation
+4. Score: returning value / flat / declining
 
-## Diagnostic Workflow
+### Phase 3: Structural Layer (only if cognitive layer shows issues)
+1. Check for orphan zones, hollow clusters, tag noise
+2. Identify fragmentation patterns
+3. Score: clean / messy but functional / blocking workflow
 
-1. Look for workflow traces first: Inbox, recent Notes, Meta, Projects.
-2. Sample; do not scan the whole vault by default.
-3. Record health signals and risk signals.
-4. Recommend 1-3 highest-leverage interventions.
-5. Do not repair, move, or restructure by default.
+<details>
+<summary>Health Metrics Reference (expand for quantitative thresholds)</summary>
+
+- Inbox freshness: items >30 days old = stale signal
+- Synthesis frequency: <1 per month = workflow gap
+- Reuse rate: <10% of notes ever linked-to = cognitive concern
+- Orphan rate: >40% unlinked notes = structural concern
+- Tag entropy: >50 tags with <3 uses each = noise
+
+</details>
+
+### Phase 4: Recommend
+1-3 highest-leverage interventions, ranked. Report what NOT to do now.
 
 ## Output Contract
 
 ```text
 Overall health: healthy / usable but fragile / degrading / archival
 Weakest layer: workflow / cognitive / structural
-Workflow findings: ...
-Cognitive findings: ...
-Structural findings: ...
+---
+Workflow findings: ... (evidence)
+Cognitive findings: ... (evidence)
+Structural findings: ... (evidence)
 Risk signals: 1-3 items
 Recommended interventions: 1-3 items, ranked by leverage
 Not recommended now: ...
 ```
 
-## Exit Criteria
-
-- No more than three recommendations.
-- Every risk signal has evidence.
-- Structural mess is not treated as the only possible problem.
-- No repair is executed without confirmation.
-
 ## Gotchas
 
-| Mistake | Consequence | Correction |
-|---|---|---|
-| Starting from structure | Misdiagnoses the real failure | Start workflow -> cognitive -> structural |
-| Treating every orphan as bad | False alarms | Check whether it blocks return value |
-| Giving many fixes | No execution focus | Recommend 1-3 interventions |
-| Turning diagnosis into cleanup | Unauthorized modification | Report first, ask before repair |
+### Gotcha 1: Starting from structure
+**What happens:** Agent counts orphans and messy folders first
+**Why it's wrong:** Structural mess may be irrelevant if workflow is healthy
+**Correct approach:** Always check workflow → cognitive → structural in order
 
-## Minimal Eval Set
+### Gotcha 2: Too many recommendations
+**What happens:** Agent gives 5-7 improvement suggestions
+**Why it's wrong:** No execution focus; user is overwhelmed
+**Correct approach:** Maximum 3 interventions, ranked by leverage
 
-Should trigger: diagnose vault health, assess whether the knowledge base is archival, identify the highest-leverage repair, check if the knowledge workflow is broken.
+### Gotcha 3: Diagnosis becomes cleanup
+**What happens:** Agent starts moving/renaming/restructuring during diagnosis
+**Why it's wrong:** Unauthorized modification; diagnosis should inform, not act
+**Correct approach:** Report findings, recommend interventions, wait for confirmation
 
-Should not trigger: sort raw notes, suggest links, write weekly synthesis, promote one note.
+## Validators
+
+- `validators/pre-check.sh`: Confirms vault is accessible for sampling
+- `validators/post-check.sh`: Verifies ≤3 recommendations and layer order respected
+
+## Exit Criteria
+
+- No more than 3 recommendations
+- Every risk signal has evidence
+- Layers checked in order (workflow → cognitive → structural)
+- No repair executed without confirmation

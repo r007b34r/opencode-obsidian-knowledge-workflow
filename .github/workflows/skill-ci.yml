@@ -1,0 +1,33 @@
+name: Skill Validation
+
+on:
+  push:
+    paths: ['skills/**', 'scripts/**']
+  pull_request:
+    paths: ['skills/**', 'scripts/**']
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Structure & frontmatter validation
+        run: bash scripts/validate-all.sh
+
+      - name: Forbidden API regression
+        run: bash scripts/check-forbidden-apis.sh
+
+      - name: Token budget check
+        run: |
+          for skill in skills/*/SKILL.md; do
+            LINES=$(wc -l < "$skill")
+            if [ "$LINES" -gt 500 ]; then
+              echo "FAIL: $skill exceeds 500 lines ($LINES)"
+              exit 1
+            fi
+          done
+          echo "All skills within token budget"
+
+      - name: Eval coverage report
+        run: bash scripts/run-trigger-evals.sh

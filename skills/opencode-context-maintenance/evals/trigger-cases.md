@@ -1,20 +1,44 @@
-# OpenCode Context Maintenance Trigger Evals
+# Context Maintenance Trigger Evals
 
-## Should trigger
-- "Our OpenCode/Obsidian context may be stale."
-- "Check whether documented assumptions match current host reality."
-- "Diagnose skill/config/vault context drift."
+## Should trigger (10)
+- "My context files are outdated."
+- "Records disagree with actual config."
+- "Model baseline changed, update context."
+- "MCP error should be captured as context."
+- "OpenCode memory is stale."
+- "上下文和实际情况不一致了。"
+- "Check if my vault context matches reality."
+- "Configuration changed but notes didn't update."
+- "My skill assumptions may have drifted."
+- "Verify that documented constraints are still accurate."
 
-## Should not trigger
-- Direct note CRUD only: use obsidian-mcp alone.
-- Inbox triage, weekly synthesis, or connection review requests.
-- Code implementation unrelated to context drift.
+## Should not trigger (10)
+- "Triage my inbox." → inbox-triage
+- "Synthesize this week." → weekly-synthesis
+- "Find connections." → connection-review
+- "Promote this note." → note-promotion
+- "Is my vault healthy?" → vault-health-feedback
+- "Write a new note." → obsidian-mcp
+- "Sort captures." → inbox-triage
+- "What patterns exist?" → connection-review
+- "Archive old notes." → inbox-triage
+- "What's my one action?" → weekly-synthesis
 
-## Near misses
-- "Update a README" is writing unless it corrects context drift.
-- "What model are you?" is direct answer unless persistent context is being audited.
+## Near misses (5)
+- "My vault feels stale" — if about context accuracy = maintenance; if about workflow health = vault-health
+- "Update my project notes" — if about drift = maintenance; if about content = obsidian-mcp
+- "Something changed in my setup" — maintenance if about context alignment; health if about workflow
+- "Fix my configuration" — maintenance diagnoses; but actual config edit needs user confirmation
+- "My notes don't match what I'm doing" — maintenance if context drift; triage if inbox backlog
 
 ## Pass criteria
-- Distinguish stable facts from hypotheses.
-- Verify active entry points before recommending edits.
-- Prefer recommendation before config mutation.
+- Every drift finding has evidence of actual conflict
+- Old wording not treated as drift without conflict
+- No automatic config edits
+- All three layers checked
+
+## Failure mode evals
+- Minor wording differences but no real conflict → correctly identifies as non-drift
+- Real config change not reflected in notes → correctly flags with evidence
+- User asks to "fix" config directly → defers, recommends, doesn't auto-edit
+- Context slightly stale but host reality unchanged → recommends few sharp updates only
