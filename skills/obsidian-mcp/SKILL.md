@@ -1,124 +1,137 @@
 ---
 name: obsidian-mcp
-description: Load when the user asks to read, search, write, tag, edit, reorganize, or verify an Obsidian vault through MCP tools. This is the mandatory safety layer for all vault operations. Use it for note CRUD, frontmatter, tags, search, batch edits, and verification. Do not use it alone for knowledge-workflow decisions such as inbox triage, connection review, weekly synthesis, context maintenance, vault health diagnosis, or note promotion; combine with the corresponding workflow skill.
-license: MIT
-compatibility: opencode; obsidian-mcp-server@3.1.5; Windows host verified 2026-05-10
+description: >
+  Vault operation safety layer for all Obsidian read/search/write/tag/edit/verify
+  operations through MCP tools. Load when any vault CRUD, frontmatter, tags, search,
+  batch edits, or verification is needed. Do NOT use alone for knowledge-workflow
+  decisions; combine with the corresponding workflow skill.
+license: Apache-2.0
+compatibility:
+  runtime: opencode
+  requires: [obsidian-mcp-server]
+  verified-host: "obsidian-mcp-server@3.1.5 / Windows / 2026-05-10"
 metadata:
-  version: "2.0.0"
-  last-reviewed: "2026-05-10"
-  owner: local
+  version: "4.0.0"
+  last-reviewed: "2026-05-14"
+  owner: r007b34r
   eval-status: regression-evals-defined
-  requires: obsidian-mcp-server
+  token-budget: "~3200 tokens"
+triggers:
+  keywords: [read note, write note, search vault, tag, edit, frontmatter, verify, list notes, replace, delete]
+  contexts: ["any obsidian vault operation needed"]
+  negative: [triage decision, synthesis, relationship analysis, health diagnosis, promotion decision]
+boundaries:
+  owns: [vault CRUD, frontmatter management, tag management, search, verification]
+  delegates_to:
+    inbox-triage: "routing decisions for inbox items"
+    connection-review: "relationship analysis decisions"
+    weekly-synthesis: "meaning extraction decisions"
+    note-promotion: "promotion decisions"
+    vault-health-feedback: "health diagnosis decisions"
+    opencode-context-maintenance: "context drift decisions"
+  never_absorbs: [workflow decisions, knowledge interpretation]
+continuations:
+  on_success:
+    - skill: "[calling workflow skill]"
+      condition: "vault operation complete, return control to workflow skill"
+  on_failure:
+    - skill: vault-health-feedback
+      condition: "repeated MCP failures suggest environment issue"
+  escalation:
+    - human
+      condition: "3 repeated failures on same operation"
 ---
 
 # Obsidian MCP Skill — Vault Operation Safety Layer
 
-## Resource Files
+## Constraints
 
-- `evals/trigger-cases.md`: positive, negative, and regression cases for MCP safety routing.
-- `references/examples.md`: good/bad operation examples and failure recovery examples.
-- `references/templates.md`: completion report and safety regression templates.
-- `CHANGELOG.md`: maintenance log for host-reality changes and MCP failures.
-
-## Production Rules
-
-```
-NO OBSIDIAN WRITE WITHOUT FRESH READ CONFIRMATION FIRST
-NO COMPLETION CLAIMS WITHOUT READBACK VERIFICATION
-NO USE OF KNOWN-BROKEN MCP OPERATIONS
-EVERY CHANGED LINE MUST TRACE TO THE USER REQUEST
-```
-
-This skill owns low-level Obsidian vault operations only. Knowledge-workflow decisions belong to `inbox-triage`, `connection-review`, `weekly-synthesis`, `opencode-context-maintenance`, `vault-health-feedback`, and `note-promotion`.
+- NO vault write without fresh read confirmation first
+- NO completion claims without readback verification
+- NO use of known-broken MCP operations (patch_note, append_to_note)
+- EVERY changed line must trace to the user request
+- This skill owns vault operations ONLY; workflow decisions belong to companion skills
 
 ## Verified Host Constraints
 
-These constraints come from real OpenCode + `obsidian-mcp-server@3.1.5` failures on this host. They are hard rules, not style preferences.
+> These constraints are based on `obsidian-mcp-server@3.1.5` on Windows.
+> On upgrade: re-verify each Forbidden operation with a dry-run test.
 
-| MCP operation | Status | Observed reason | Required alternative |
+| MCP operation | Status | Reason | Alternative |
 |---|---|---|---|
-| `obsidian_patch_note` | **Forbidden** | OpenCode host discriminated-union schema translation bug; observed `MCP error -32602: Structured content does not match the tool's output schema` | `obsidian_replace_in_note`, `obsidian_manage_frontmatter`, or `obsidian_manage_tags` |
-| `obsidian_append_to_note` | **Forbidden** | Same schema translation failure mode | `obsidian_replace_in_note`; use `obsidian_write_note overwrite:false` only for new files |
-| `obsidian_get_note format: section` | **Use with caution; never as the only read/verification path** | Long section reads produced `data must have required property 'result', data must NOT have additional properties` | Use `format: document-map` to locate structure, then `format: content` or `format: full` for verification |
-| `obsidian_write_note overwrite:true` | **Forbidden by default** | Whole-file overwrite can destroy unrelated content and links | New files only with `overwrite:false`; existing files use surgical replace/manage tools |
-| `obsidian_delete_note` | **Requires explicit user confirmation** | Deletion has no MCP-level undo | List path, purpose, and link-risk first; wait for confirmation |
-
-If a user request appears to require a forbidden operation, explain the host constraint and use the alternative. Do not “try it anyway.”
+| `obsidian_patch_note` | **Forbidden** | Schema translation bug (-32602) | `obsidian_replace_in_note`, `obsidian_manage_frontmatter`, `obsidian_manage_tags` |
+| `obsidian_append_to_note` | **Forbidden** | Same schema failure | `obsidian_replace_in_note`; `write_note overwrite:false` for new files only |
+| `obsidian_get_note format: section` | **Caution** | Schema output mismatch on long sections | Use `document-map` to locate, then `content/full` to verify |
+| `obsidian_write_note overwrite:true` | **Forbidden by default** | Destroys unrelated content | New files: `overwrite:false`; existing: surgical replace/manage |
+| `obsidian_delete_note` | **Requires confirmation** | No MCP-level undo | List path + link-risk first; wait for user |
 
 ## Tool Selection
 
-| Goal | Preferred tool | Rule |
+| Goal | Tool | Rule |
 |---|---|---|
-| Browse vault structure | `obsidian_list_notes` | Use depth 2-4; narrow path first on large vaults |
-| Search content | `obsidian_search_notes` | Output may be clipped; read target notes after search |
-| Read before edit | `obsidian_get_note format: document-map` plus `content/full` | Section mode is only auxiliary |
+| Browse structure | `obsidian_list_notes` | Depth 2-4; narrow path first |
+| Search content | `obsidian_search_notes` | Output may clip; read targets after |
+| Read before edit | `obsidian_get_note format: document-map` + `content/full` | Section mode is auxiliary only |
 | Create note | `obsidian_write_note overwrite:false` | Read back immediately |
-| Surgical edit | `obsidian_replace_in_note` | Literal replacement preferred; regex must be narrow and explainable |
+| Surgical edit | `obsidian_replace_in_note` | Literal preferred; regex must be narrow |
 | Frontmatter | `obsidian_manage_frontmatter` | Atomic single-key operations |
-| Tags | `obsidian_manage_tags` | Use for frontmatter/inline tag reconciliation |
-| UI open | `obsidian_open_in_ui` | Never counts as verification |
+| Tags | `obsidian_manage_tags` | Frontmatter/inline reconciliation |
 
 ## Standard Workflow
 
 ### 1. Locate and Read
+1. Identify target paths, scope, expected change
+2. Read `document-map` or `content/full` before writing
+3. If path missing, search for candidates; do not create near-duplicates
 
-1. Identify target paths, scope, and expected change.
-2. For existing notes, read `document-map` or `content/full` before writing.
-3. If a path is missing, search for candidates; do not create near-duplicates blindly.
-
-### 2. Plan the Minimum Change
-
-Only change lines, sections, tags, or metadata that directly serve the user request. Report unrelated issues; do not fix them opportunistically.
+### 2. Plan Minimum Change
+Only change lines that directly serve the user request. Report unrelated issues; do not fix opportunistically.
 
 ### 3. Write
-
-- New file: `obsidian_write_note overwrite:false`.
-- Existing file: `obsidian_replace_in_note`, `obsidian_manage_frontmatter`, or `obsidian_manage_tags`.
-- Batch work: after every five writes, sample-verify the pattern; final verification must cover every intended target.
+- New file: `obsidian_write_note overwrite:false`
+- Existing: `obsidian_replace_in_note`, `obsidian_manage_frontmatter`, or `obsidian_manage_tags`
+- Batch: sample-verify every 5 writes; final verification covers all targets
 
 ### 4. Read Back
-
-After every write:
-
-1. Read the changed note.
-2. Compare actual content, tags, frontmatter, and path against expectation.
-3. If mismatched, fix or report the blocker.
-4. Only then claim completion.
+1. Read the changed note
+2. Compare actual vs expected (content, tags, frontmatter, path)
+3. If mismatched: fix or report blocker
+4. Only then claim completion
 
 ## Error Recovery
 
 | Error | Response |
 |---|---|
-| `path_forbidden` | Use `list_notes` to discover allowed scope; retry in an allowed path |
-| `note_missing` | Search for candidates; ask the user to choose if ambiguous |
-| `file_exists` | Read the existing file; switch to surgical replace unless explicit overwrite was requested |
-| `-32602` schema error | Stop using that MCP operation; switch to the hard-rule alternative above |
-| Three repeated failures | Stop writing; report attempts, exact errors, and recommended next step |
+| `path_forbidden` | Use `list_notes` to discover allowed scope; retry |
+| `note_missing` | Search for candidates; ask user if ambiguous |
+| `file_exists` | Read existing; switch to surgical replace |
+| `-32602` schema error | Stop using that operation; switch to alternative |
+| 3 repeated failures | Stop; report attempts, errors, recommended next step |
 
 ## Safety Boundaries
 
-- Do not delete notes without explicit user confirmation.
-- Do not restructure the vault without a plan and confirmation.
-- Do not edit host config, MCP config, or git history by default.
-- Do not commit git changes unless the user explicitly requested it.
-- Do not write secrets, tokens, cookies, or private credentials into notes.
-
-## Completion Report Contract
-
-Report in the user's language and include:
-
-- changed vault paths;
-- MCP tools used;
-- forbidden operations avoided;
-- readback verification evidence;
-- unresolved items and why, if any.
+- No deletion without explicit user confirmation
+- No vault restructuring without plan + confirmation
+- No host/MCP/git config edits by default
+- No secrets, tokens, or credentials written to notes
 
 ## Gotchas
 
-| Gotcha | Why it fails | Correct approach |
-|---|---|---|
-| Using `patch_note` or `append_to_note` because it looks semantically right | Current host schema translation fails with -32602 | Always use `replace_in_note` or manage tools |
-| Trusting `section` reads as final verification | Observed schema-output mismatch on long sections | Verify with full/content reads |
-| Treating `write_note overwrite:true` as an editor | Can overwrite unrelated content | Use surgical replacement |
-| Opening the UI and claiming completion | UI visibility is not machine verification | Read back with MCP |
-| Letting this skill make workflow decisions | It blurs ownership and causes scope creep | Combine with the relevant workflow skill |
+### Gotcha 1: Using forbidden APIs because they "look right"
+**What happens:** Agent calls `patch_note` or `append_to_note` for a semantically matching task
+**Why it's wrong:** Current host schema translation fails with -32602 regardless of intent
+**Correct approach:** Always use `replace_in_note` or manage tools; never "try it anyway"
+
+### Gotcha 2: Trusting section reads as verification
+**What happens:** Agent reads `format: section` and claims write verified
+**Why it's wrong:** Long section reads produce schema-output mismatch on this host
+**Correct approach:** Verify with `format: content` or `format: full`
+
+### Gotcha 3: Letting this skill make workflow decisions
+**What happens:** Agent uses obsidian-mcp to decide what to triage/promote/synthesize
+**Why it's wrong:** Blurs ownership; causes scope creep into workflow territory
+**Correct approach:** Execute vault operations only; defer decisions to companion skills
+
+## Validators
+
+- `validators/api-safety-check.sh`: Post-execution check that no forbidden APIs were used

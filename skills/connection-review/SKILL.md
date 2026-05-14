@@ -1,95 +1,141 @@
 ---
 name: connection-review
-description: "Load when recent Obsidian notes, newly promoted notes, or a small set of selected notes need relationship analysis: likely links, repeated patterns, meaningful contradictions, and follow-up note opportunities. Use for local graph review without scanning the whole vault. Do not use for first-pass inbox triage, weekly synthesis, or vault health diagnosis."
-license: MIT
-compatibility: opencode; requires obsidian-mcp for vault operations
+description: >
+  Analyze relationships among recent or selected Obsidian notes: candidate links,
+  repeated patterns, meaningful contradictions, and follow-up note opportunities.
+  Load when user asks to find connections, suggest wikilinks, identify patterns,
+  or surface contradictions in a bounded note set.
+  Do NOT use for inbox triage, weekly synthesis, vault health, or note promotion.
+license: Apache-2.0
+compatibility:
+  runtime: opencode
+  requires: [obsidian-mcp]
+  verified-host: "obsidian-mcp-server@3.1.5 / Windows / 2026-05-10"
 metadata:
-  version: "2.0.0"
-  last-reviewed: "2026-05-10"
-  owner: local
-  eval-status: trigger-evals-defined
+  version: "4.0.0"
+  last-reviewed: "2026-05-14"
+  owner: r007b34r
+  eval-status: edd-validated
+  token-budget: "~2600 tokens"
+triggers:
+  keywords: [connections, links, relationships, patterns, contradictions, wikilinks, graph]
+  contexts: ["bounded set of obsidian notes needing relationship analysis"]
+  negative: [triage, inbox, sort, synthesis, weekly, health, promote, create note]
+boundaries:
+  owns: [link discovery, pattern detection, contradiction surfacing, follow-up suggestions]
+  delegates_to:
+    note-promotion: "follow-up note suggestion accepted by user"
+    weekly-synthesis: "patterns span full week window"
+  never_absorbs: [inbox routing, synthesis, health diagnosis, context maintenance]
+continuations:
+  on_success:
+    - skill: note-promotion
+      condition: "follow-up note suggestion accepted by user"
+    - skill: weekly-synthesis
+      condition: "patterns span full week window and user requests synthesis"
+  on_failure:
+    - skill: inbox-triage
+      condition: "notes too raw for relationship analysis"
+  escalation:
+    - human
+      condition: "all connections are weak/uncertain"
 ---
 
 # connection-review
 
-## Resource Files
+## Constraints
 
-- `evals/trigger-cases.md`: relationship-review trigger and near-miss cases.
-- `references/examples.md`: good/bad link, pattern, and contradiction examples.
-- `references/templates.md`: evidence schema and output report templates.
-- `CHANGELOG.md`: real link-quality failures and boundary adjustments.
+- NEVER scan whole vault; scope = 5-15 primary notes + small supporting set
+- NEVER treat keyword overlap alone as evidence of connection
+- NEVER synthesize week-level meaning (that is weekly-synthesis)
+- NEVER write links without explicit user confirmation
+- NEVER turn review into whole-vault graphing
 
-## Goal
+## Companion Skill
 
-Review relationships across recent or user-selected Obsidian notes: candidate links, pattern signals, contradiction signals, and follow-up note opportunities.
-
-Core principle: **start from local, actionable relationships; surface higher-order patterns only when evidence supports them.**
-
-## Required Companion Skill
-
-For any vault operation, follow `obsidian-mcp`: do not use `obsidian_patch_note`, do not use `obsidian_append_to_note`, treat `get_note section` as auxiliary only, and verify every write through readback.
+All vault operations follow `obsidian-mcp`. Forbidden: `obsidian_patch_note`, `obsidian_append_to_note`. Verify every write through readback.
 
 ## Trigger Boundary
 
-Use this skill when the user asks what recent notes connect to, which notes should link, what patterns are emerging, or whether there are meaningful contradictions.
+Use when: find note connections, suggest wikilinks, identify repeated patterns, surface contradictions, review relationships in a bounded set.
 
-Do not use this skill for:
+Do NOT use for:
+- Raw inbox sorting → `inbox-triage`
+- Week-level thesis and one action → `weekly-synthesis`
+- Vault system health diagnosis → `vault-health-feedback`
+- Upgrading material into stable notes → `note-promotion`
 
-- raw inbox sorting -> `inbox-triage`;
-- week-level thesis and one action -> `weekly-synthesis`;
-- vault system health diagnosis -> `vault-health-feedback`;
-- upgrading material into stable notes -> `note-promotion`.
+## Procedure
 
-## Input Sampling
+### Phase 1: Scope
+1. `obsidian_list_notes` or `obsidian_search_notes` → identify recent/specified set
+2. Bound to 5-15 primary notes; reject unbounded requests (ask user to narrow)
 
-Default scope: recently created/modified notes or a user-provided set.
+### Phase 2: Read
+1. For each: `obsidian_get_note format:"document-map"` → structure overview
+2. `format:"content"` only when evidence is needed for a specific connection
+3. Read older notes only to verify a suspected relationship
 
-Target size: 5-15 primary notes plus a small number of supporting background notes. Do not scan the whole vault by default.
+### Phase 3: Analyze
+1. **Link candidates**: explicit note-to-note or note-to-project relationships
+2. **Pattern signals**: repeated themes, problems, or methods across 3+ notes
+3. **Contradiction signals**: new vs old claims, goal vs method, assumption vs evidence
+4. **Follow-up note suggestions**: synthesis, topic, contradiction, or question notes
 
-Process:
+<details>
+<summary>Pattern Detection Heuristics (expand only when patterns are ambiguous)</summary>
 
-1. Use `list_notes` or `search_notes` to identify the recent/specified set.
-2. Read `document-map` first; use `content/full` only when evidence is needed.
-3. Read older notes only to verify a relationship.
+- Repeated method across 3+ notes = method pattern
+- Same problem framed differently in 2+ notes = contradiction candidate
+- Same entity referenced but never linked = link candidate
+- Shared tag + temporal proximity alone ≠ connection (keyword trap)
+- Contradiction requires real tension, not mere difference of topic
 
-## Review Layers
+</details>
 
-1. **Link candidates**: explicit note-to-note or note-to-project relationships.
-2. **Pattern signals**: repeated themes, problems, or methods.
-3. **Contradiction signals**: new vs old claims, goal vs method, assumption vs evidence.
-4. **Follow-up note suggestions**: synthesis, topic, contradiction, or question notes.
+### Phase 4: Report
+Output per Output Contract. Write lightweight wikilinks only after explicit user approval.
 
 ## Output Contract
 
 ```text
-Reviewed scope: ...
-Connection suggestions: A -> B; reason; evidence; write-back suggested?
+Reviewed scope: [note count, time range]
+---
+Connection suggestions:
+  A → B; reason; evidence; write-back suggested?
 Pattern findings: ...
 Contradiction findings: ...
 Follow-up note suggestions: ...
 Uncertain items: relationships requiring more evidence
 ```
 
-Default mode is analysis-only. Write lightweight wikilinks only after explicit user approval, using `obsidian_replace_in_note` and readback verification.
-
-## Exit Criteria
-
-- Every connection suggestion names both endpoints and evidence.
-- Patterns and contradictions are not based on keyword overlap alone.
-- The whole vault was not scanned.
-- Any written link has been read back and verified.
+Default mode: analysis-only. Write links only after confirmation, using `obsidian_replace_in_note` + readback.
 
 ## Gotchas
 
-| Mistake | Consequence | Correction |
-|---|---|---|
-| Treating shared keywords as real links | Noisy graph | Require conceptual, project, or evidence relationship |
-| Turning review into whole-vault graphing | Scope explosion | Start from recent/specified notes |
-| Synthesizing too early | Takes over `weekly-synthesis` | Stop at links, patterns, contradictions, follow-ups |
-| Writing links immediately | Unauthorized vault edits | Ask first, then verify |
+### Gotcha 1: Keyword matching as connection
+**What happens:** Agent suggests links because two notes share the same tag or word
+**Why it's wrong:** Keyword overlap without conceptual relationship creates noise in the graph
+**Correct approach:** Require conceptual, project, or evidence-based relationship; cite specific content
 
-## Minimal Eval Set
+### Gotcha 2: Scope creep into whole-vault graphing
+**What happens:** Agent starts reading notes outside the specified set
+**Why it's wrong:** Violates bounded scope constraint; wastes token budget
+**Correct approach:** Stay within 5-15 primary notes; read outside only to verify a specific suspected link
 
-Should trigger: find recent-note connections, suggest wikilinks, identify repeated patterns, surface contradictions.
+### Gotcha 3: Review becomes synthesis
+**What happens:** Agent extracts a thesis or "what it all means" from the connections
+**Why it's wrong:** That is weekly-synthesis territory; connection-review stops at relationships
+**Correct approach:** Report links, patterns, contradictions, follow-ups — do not interpret meaning
 
-Should not trigger: process inbox, write weekly synthesis, diagnose vault health, expand one idea into a final note.
+## Validators
+
+- `validators/pre-check.sh`: Confirms note set is bounded (≤15 primary notes)
+- `validators/post-check.sh`: Verifies output contains no synthesis markers
+
+## Exit Criteria
+
+- Every connection suggestion names both endpoints and cites evidence
+- Patterns and contradictions are not based on keyword overlap alone
+- Whole vault was not scanned
+- Any written link has been read back and verified

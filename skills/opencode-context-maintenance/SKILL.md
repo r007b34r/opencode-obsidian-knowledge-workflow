@@ -1,89 +1,158 @@
 ---
 name: opencode-context-maintenance
-description: "Load when OpenCode or Obsidian knowledge-workflow context may be stale, inconsistent, or drifting: vault notes, current project context, host configuration, model settings, MCP reality, or written assumptions no longer align. Use to diagnose and recommend context updates without defaulting to config edits. Do not use for inbox triage, weekly synthesis, or direct vault CRUD alone."
-license: MIT
-compatibility: opencode; requires obsidian-mcp for vault operations
+description: >
+  Diagnose drift across the OpenCode + Obsidian context stack: vault notes,
+  current project context, host configuration, MCP reality, or written assumptions
+  no longer align. Load when context feels stale, records disagree with reality,
+  or configuration changed but notes did not.
+  Do NOT use for inbox triage, weekly synthesis, or direct vault CRUD alone.
+license: Apache-2.0
+compatibility:
+  runtime: opencode
+  requires: [obsidian-mcp]
+  verified-host: "obsidian-mcp-server@3.1.5 / Windows / 2026-05-10"
 metadata:
-  version: "2.0.0"
-  last-reviewed: "2026-05-10"
-  owner: local
-  eval-status: trigger-evals-defined
+  version: "4.0.0"
+  last-reviewed: "2026-05-14"
+  owner: r007b34r
+  eval-status: edd-validated
+  token-budget: "~2400 tokens"
+triggers:
+  keywords: [context, stale, drift, outdated, config changed, mismatch, 上下文, 过时, 漂移]
+  contexts: ["opencode or obsidian context may be stale or inconsistent"]
+  negative: [triage, inbox, sort, synthesis, weekly, health, promote, links]
+boundaries:
+  owns: [context drift diagnosis, layer comparison, update recommendations]
+  delegates_to:
+    vault-health-feedback: "drift reveals deeper vault health issue"
+  never_absorbs: [inbox routing, synthesis, relationship analysis, promotion, direct config editing]
+continuations:
+  on_success:
+    - skill: vault-health-feedback
+      condition: "drift reveals systemic vault health issue"
+  on_failure:
+    - skill: obsidian-mcp
+      condition: "context notes inaccessible, need vault operation"
+  escalation:
+    - human
+      condition: "config changes needed that could break environment"
 ---
 
 # opencode-context-maintenance
 
-## Resource Files
+## Constraints
 
-- `evals/trigger-cases.md`: context-drift trigger and near-miss cases.
-- `references/examples.md`: good/bad drift findings and host-reality examples.
-- `references/templates.md`: entry-point inventory and drift report templates.
-- `CHANGELOG.md`: stable context changes and drift correction history.
+- NEVER edit opencode.json, MCP config, model config, or git history automatically
+- NEVER treat old wording as drift without evidence of conflict
+- NEVER read the whole vault; find context entry points only
+- NEVER default to config edits; defer config concerns to user
+- Context is layered (3 layers); check all before recommending
 
-## Goal
+## Companion Skill
 
-Diagnose drift across the OpenCode + Obsidian knowledge-workflow context stack: long-term vault context, current work context, and host reality.
-
-Core principle: **context is layered, not a single file. Maintenance aligns layers; it does not default to config edits.**
-
-## Required Companion Skill
-
-For any vault operation, follow `obsidian-mcp`: do not use `obsidian_patch_note`, do not use `obsidian_append_to_note`, treat `get_note section` as auxiliary only, and verify every write through readback.
+All vault operations follow `obsidian-mcp`. Forbidden: `obsidian_patch_note`, `obsidian_append_to_note`. Verify every write through readback.
 
 ## Trigger Boundary
 
-Use this skill when the user says context is stale, records disagree with reality, configuration changed but notes did not, model/MCP assumptions drifted, or OpenCode/Obsidian context should be checked.
+Use when: context is stale, records disagree with reality, configuration changed but notes did not, model/MCP assumptions drifted, OpenCode/Obsidian context should be checked.
 
-Do not use this skill for:
+Do NOT use for:
+- Raw inbox sorting → `inbox-triage`
+- Week-level meaning extraction → `weekly-synthesis`
+- Direct vault CRUD → `obsidian-mcp` alone
+- Vault health diagnosis → `vault-health-feedback`
 
-- raw inbox sorting -> `inbox-triage`;
-- week-level meaning extraction -> `weekly-synthesis`;
-- direct vault CRUD -> `obsidian-mcp` alone;
-- vault health diagnosis -> `vault-health-feedback`.
+## Procedure
 
-## Three Context Layers
+### Phase 1: Identify Entry Points
+1. `obsidian_list_notes path:"Meta/"` → context source notes
+2. Check OpenCode config state (read-only observation)
+3. Identify which layer is most likely drifted based on user report
 
-1. **Long-term vault context**: stable knowledge, methodology, project indexes.
-2. **Current work context**: active task, recent decisions, user preferences.
-3. **Host reality context**: OpenCode config, MCP availability, model settings, tool constraints, observed errors.
+### Phase 2: Layer-Specific Diagnosis
 
-## Workflow
+**Long-term vault context** (stable knowledge, methodology, project indexes):
+1. Read context source notes
+2. Compare claims against current vault state
+3. Flag outdated references, dead links, stale assumptions
 
-1. Identify context entry points: which notes/configs are acting as context sources.
-2. Gather evidence from relevant notes and necessary host facts.
-3. Compare layers for disagreement.
-4. Recommend what to update, why, suggested wording, and priority.
-5. Put config changes in deferred concerns by default.
+**Current work context** (active task, recent decisions, preferences):
+1. Check if active project references are current
+2. Verify recent decisions are reflected in context
+3. Flag orphaned "current" items that are no longer current
+
+**Host reality context** (OpenCode config, MCP availability, tool constraints):
+1. Compare documented constraints against observed behavior
+2. Check if MCP server version matches documented version
+3. Flag any new errors not captured in context
+
+<details>
+<summary>Layer Checklist Details (expand for specific checks per layer)</summary>
+
+Long-term vault:
+- Are methodology notes still accurate?
+- Do project indexes point to existing notes?
+- Are archived projects still marked as active?
+
+Current work:
+- Is the "current project" actually current?
+- Are recent decisions reflected in relevant notes?
+- Are any "TODO" items completed but not updated?
+
+Host reality:
+- Does obsidian-mcp-server version match documented?
+- Are any "forbidden" APIs now working (or vice versa)?
+- Have OpenCode settings changed since last review?
+
+</details>
+
+### Phase 3: Compare and Recommend
+1. List disagreements with evidence
+2. Recommend updates: target, why, suggested wording, priority
+3. Put config changes in "deferred concerns"
 
 ## Output Contract
 
 ```text
 Summary: most drifted layer
+---
 Long-term vault context: finding / evidence / recommendation
 Current work context: finding / evidence / recommendation
 Host reality context: finding / evidence / recommendation
-Recommended updates: target · why · suggested change · priority
-Deferred config concerns: host changes requiring user confirmation
+---
+Recommended updates:
+  target · why · suggested change · priority
+Deferred config concerns:
+  [changes requiring user confirmation]
 ```
 
-Default mode is analysis-only. Before writing context updates, show the exact intended change and wait for confirmation. Verify every write.
-
-## Exit Criteria
-
-- Every drift finding has evidence.
-- Old wording is not treated as drift without conflict.
-- No automatic edits to `opencode.json`, MCP config, model config, or git history.
+Default mode: analysis-only. Show exact intended changes before writing. Verify every write.
 
 ## Gotchas
 
-| Mistake | Consequence | Correction |
-|---|---|---|
-| Treating context as one document | Misses current-work or host-reality drift | Check all three layers |
-| Editing config directly | Can break the environment | Defer config concerns first |
-| Reading the whole vault | Token waste | Find context entry points |
-| Updating because a note feels old | Creates new drift | Require evidence of conflict or new fact |
+### Gotcha 1: Treating old wording as drift
+**What happens:** Agent flags notes as "drifted" because phrasing is dated but content is still accurate
+**Why it's wrong:** Creates unnecessary churn; old but correct is not drift
+**Correct approach:** Require evidence of actual conflict or new fact before flagging
 
-## Minimal Eval Set
+### Gotcha 2: Editing config directly
+**What happens:** Agent modifies opencode.json or MCP config to "fix" drift
+**Why it's wrong:** Config changes can break the environment; not reversible without backup
+**Correct approach:** Always defer config concerns; report and recommend, never auto-edit
 
-Should trigger: records disagree with actual config, model baseline changed, MCP error should be captured as context, OpenCode memory is stale.
+### Gotcha 3: Reading the whole vault
+**What happens:** Agent scans all notes looking for inconsistencies
+**Why it's wrong:** Token waste; most notes are not context sources
+**Correct approach:** Identify context entry points (Meta/, project indexes) and check only those
 
-Should not trigger: process inbox, weekly synthesis, add tags, diagnose vault health.
+## Validators
+
+- `validators/pre-check.sh`: Confirms Meta/ path exists and context notes are accessible
+- `validators/post-check.sh`: Verifies no config files were modified
+
+## Exit Criteria
+
+- Every drift finding has evidence of actual conflict
+- Old wording is not treated as drift without conflict
+- No automatic edits to config files
+- All three layers checked before recommending

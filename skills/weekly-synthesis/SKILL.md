@@ -1,71 +1,113 @@
 ---
 name: weekly-synthesis
-description: "Load when recent Obsidian notes need time-window synthesis: an emerging thesis, meaningful contradictions, gaps, exactly one next action, exactly one next question, and follow-up note suggestions. Use for week-level or user-specified-period meaning-making. Do not use for inbox triage, link-only review, project status reporting, or direct note promotion."
-license: MIT
-compatibility: opencode; requires obsidian-mcp for vault operations
+description: >
+  Extract time-window meaning from recent Obsidian notes: emerging thesis,
+  meaningful contradictions, gaps, exactly one next action, exactly one next question.
+  Load when user asks for weekly synthesis, what recent notes mean, emerging thesis,
+  or highest-value next action. Do NOT use for inbox triage, link-only review,
+  project status, or direct note promotion.
+license: Apache-2.0
+compatibility:
+  runtime: opencode
+  requires: [obsidian-mcp]
+  verified-host: "obsidian-mcp-server@3.1.5 / Windows / 2026-05-10"
 metadata:
-  version: "2.0.0"
-  last-reviewed: "2026-05-10"
-  owner: local
-  eval-status: trigger-evals-defined
+  version: "4.0.0"
+  last-reviewed: "2026-05-14"
+  owner: r007b34r
+  eval-status: edd-validated
+  token-budget: "~2500 tokens"
+triggers:
+  keywords: [synthesis, weekly, what did I learn, thesis, meaning, 综合, 本周, 总结]
+  contexts: ["recent obsidian notes need time-window meaning extraction"]
+  negative: [triage, inbox, sort, links only, connections, health, promote, status report]
+boundaries:
+  owns: [time-window meaning extraction, thesis formation, gap identification]
+  delegates_to:
+    note-promotion: "synthesis output ready to become stable note"
+    opencode-context-maintenance: "thesis reveals context drift"
+  never_absorbs: [inbox routing, link-only review, health diagnosis]
+continuations:
+  on_success:
+    - skill: note-promotion
+      condition: "user wants to preserve synthesis as stable note"
+    - skill: opencode-context-maintenance
+      condition: "thesis or gaps reveal context drift"
+  on_failure:
+    - skill: connection-review
+      condition: "insufficient signal for synthesis; try relationship analysis first"
+  escalation:
+    - human
+      condition: "signal too weak to form any thesis"
 ---
 
 # weekly-synthesis
 
-## Resource Files
+## Constraints
 
-- `evals/trigger-cases.md`: synthesis trigger cases and near-miss cases.
-- `references/examples.md`: good/bad thesis, contradiction, and action examples.
-- `references/templates.md`: synthesis report and optional note templates.
-- `CHANGELOG.md`: real synthesis failure modes and prompt-boundary updates.
+- Output is NOT a recap; must contain thesis + evidence
+- EXACTLY one action, EXACTLY one question (not zero, not many)
+- NEVER let old notes dominate; they are calibration only
+- NEVER write synthesis note without user confirmation
+- If signal is weak: say "conclusion is uncertain" — do NOT force a thesis
+- Default time window: 7 days unless user specifies otherwise
 
-## Goal
+## Companion Skill
 
-Turn recent Obsidian note activity into a stable interpretation: emerging thesis, contradictions, gaps, exactly one action, exactly one question, and follow-up note suggestions.
-
-Core principle: **synthesize meaning, not activity.**
-
-## Required Companion Skill
-
-For any vault operation, follow `obsidian-mcp`: do not use `obsidian_patch_note`, do not use `obsidian_append_to_note`, treat `get_note section` as auxiliary only, and verify every write through readback.
+All vault operations follow `obsidian-mcp`. Forbidden: `obsidian_patch_note`, `obsidian_append_to_note`. Verify every write through readback.
 
 ## Trigger Boundary
 
-Use this skill when the user asks for a weekly synthesis, what recent notes mean, an emerging thesis, or one most valuable next action/question. Default window is seven days unless the user specifies another period.
+Use when: weekly synthesis, what recent notes mean, emerging thesis, one most valuable next action/question, time-window meaning-making.
 
-Do not use this skill for:
+Do NOT use for:
+- Raw material routing → `inbox-triage`
+- Link-only or relationship review → `connection-review`
+- Project status reporting (not synthesis)
+- Promoting result into stable note → hand off to `note-promotion`
 
-- raw material routing -> `inbox-triage`;
-- link-only or relationship review -> `connection-review`;
-- project status reporting;
-- promoting the result into a stable note -> hand off to `note-promotion` after analysis.
+## Procedure
 
-## Input Scope
+### Phase 1: Scope
+1. Identify time window (default: 7 days; respect user-specified period)
+2. `obsidian_list_notes` or `obsidian_search_notes` → notes in window
+3. Count and report scope before proceeding
 
-Default: recent seven days. If the user says "recent", "this research round", or "this month", use that semantic window.
+### Phase 2: Read
+1. `obsidian_get_note format:"document-map"` → theme distribution
+2. Deep-read only notes that support thesis, contradiction, or gap claims
+3. Use older notes only for calibration (not primary signal)
 
-Read strategy:
+### Phase 3: Synthesize
+Extract meaning across six dimensions:
+1. **Emerging thesis**: one claim + supporting evidence (or "uncertain" if weak)
+2. **Contradictions**: only tensions that matter for reasoning
+3. **Gaps**: missing perspective, evidence, decision, or experiment
+4. **One action**: exactly one highest-value next move
+5. **One question**: exactly one question worth preserving
+6. **Follow-up note suggestions**: optional downstream notes
 
-1. Identify notes in the time window.
-2. Read `document-map` first to understand theme distribution.
-3. Deep-read only notes that support thesis, contradiction, or gap claims.
-4. Use older notes only for calibration, not as the primary signal.
+### Phase 4: Report
+Output per Output Contract. Do not write synthesis note by default.
 
-## Synthesis Structure
+<details>
+<summary>Weak Signal Handling (expand when theme stability is low)</summary>
 
-1. **Emerging thesis**: one claim plus supporting evidence.
-2. **Contradictions**: only tensions that matter for reasoning.
-3. **Gaps**: missing perspective, evidence, decision, or experiment.
-4. **One action**: exactly one highest-value next move.
-5. **One question**: exactly one question worth preserving.
-6. **Follow-up note suggestions**: optional downstream notes.
+- If fewer than 3 notes in window: report insufficient data, suggest expanding window
+- If notes are all on different topics: report fragmentation, no forced thesis
+- If contradictions are only surface-level: report "no meaningful contradictions found"
+- Acceptable output: "Thesis uncertain. Strongest signal is [X] but evidence is thin."
+
+</details>
 
 ## Output Contract
 
 ```text
-Scope: time window, note count, deep-read count
-Theme stability: low/medium/high
+Scope: [time window] / [note count] / [deep-read count]
+Theme stability: low / medium / high
+---
 Emerging thesis: ...
+  Evidence: ...
 Contradictions: ...
 Gaps: ...
 One action: ...
@@ -73,26 +115,33 @@ One question: ...
 Follow-up note suggestions: ...
 ```
 
-Do not write a synthesis note by default. After approval, create with `obsidian_write_note overwrite:false` and read back.
-
-## Exit Criteria
-
-- Output is not a recap.
-- Exactly one action and exactly one question.
-- Thesis has evidence; contradictions are not forced.
-- Any written note has been read back and verified.
+After user approval, create synthesis note with `obsidian_write_note overwrite:false` and read back.
 
 ## Gotchas
 
-| Mistake | Consequence | Correction |
-|---|---|---|
-| Recapping activity | No new understanding | Extract thesis and gaps |
-| Returning many actions | User loses focus | Force one action |
-| Letting old notes dominate | Recent signal disappears | Use older notes only as calibration |
-| Writing before confirmation | Unauthorized vault changes | Ask first, then verify |
+### Gotcha 1: Recap disguised as synthesis
+**What happens:** Agent lists what happened this week without extracting meaning
+**Why it's wrong:** A recap has zero cognitive return; user already knows what happened
+**Correct approach:** Force a thesis claim with supporting evidence, even if uncertain
 
-## Minimal Eval Set
+### Gotcha 2: Multiple actions and questions
+**What happens:** Agent returns 3-5 actions and 2-3 questions
+**Why it's wrong:** Defeats the purpose of synthesis (focus); user loses signal in noise
+**Correct approach:** Force exactly one action and one question; pick highest-value
 
-Should trigger: weekly synthesis, synthesize recent notes into a thesis, identify one next action, extract one question from a research round.
+### Gotcha 3: Old notes dominate the thesis
+**What happens:** Agent builds thesis primarily from notes older than the time window
+**Why it's wrong:** Recent signal disappears; synthesis becomes a rehash of established knowledge
+**Correct approach:** Use older notes only as calibration; thesis must be grounded in recent evidence
 
-Should not trigger: process inbox, only suggest wikilinks, write a project status report, promote one note.
+## Validators
+
+- `validators/post-check.sh`: Verifies exactly one "One action:" and one "One question:" in output
+- `validators/no-recap-check.sh`: Flags output that lacks thesis/evidence structure
+
+## Exit Criteria
+
+- Output is not a recap (has thesis + evidence)
+- Exactly one action and exactly one question
+- Thesis has evidence; contradictions are not forced
+- Any written note has been read back and verified
