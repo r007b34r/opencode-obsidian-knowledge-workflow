@@ -2,15 +2,18 @@ name: Skill Validation
 
 on:
   push:
-    paths: ['skills/**', 'scripts/**']
+    paths: ['skills/**', 'scripts/**', '.github/**']
   pull_request:
-    paths: ['skills/**', 'scripts/**']
+    paths: ['skills/**', 'scripts/**', '.github/**']
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Structure & frontmatter validation
         run: bash scripts/validate-all.sh
