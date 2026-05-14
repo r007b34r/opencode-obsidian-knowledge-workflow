@@ -15,18 +15,25 @@ for skill_dir in skills/*/; do
     fi
   done
 
+  # Check version in frontmatter
   if ! grep -q "version:" "$skill_dir/SKILL.md" 2>/dev/null; then
     echo -n " NO_VERSION"
     SKILL_ERRORS=$((SKILL_ERRORS + 1))
   fi
-  if ! grep -q "triggers:" "$skill_dir/SKILL.md" 2>/dev/null; then
-    echo -n " NO_TRIGGERS"
+
+  # Check that Constraints section exists and is early in the file
+  if ! grep -q "^## Constraints" "$skill_dir/SKILL.md" 2>/dev/null; then
+    echo -n " NO_CONSTRAINTS_SECTION"
     SKILL_ERRORS=$((SKILL_ERRORS + 1))
   fi
-  if ! grep -q "continuations:" "$skill_dir/SKILL.md" 2>/dev/null; then
-    echo -n " NO_CONTINUATIONS"
+
+  # Check for lazy-load instructions
+  if ! grep -q "read.*references/" "$skill_dir/SKILL.md" 2>/dev/null; then
+    echo -n " NO_LAZY_LOAD"
     SKILL_ERRORS=$((SKILL_ERRORS + 1))
   fi
+
+  # Check license
   if grep -q "license: MIT" "$skill_dir/SKILL.md" 2>/dev/null; then
     echo -n " LICENSE_MISMATCH"
     SKILL_ERRORS=$((SKILL_ERRORS + 1))
@@ -42,10 +49,11 @@ done
 
 echo ""
 echo "=== Forbidden API Check ==="
-FORBIDDEN="obsidian_patch_note\|obsidian_append_to_note"
-FOUND=$(grep -rn "$FORBIDDEN" skills/ --include="*.md" | grep -iv "forbidden\|禁止\|do not use\|never\|banned\|broken" || true)
+FORBIDDEN="obsidian_patch_note|obsidian_append_to_note"
+# Allow references in prohibition context OR in "bad example" / "forbidden" / "error" context
+FOUND=$(grep -rn -E "$FORBIDDEN" skills/ --include="*.md" | grep -iv "forbidden\|禁止\|do not use\|never\|banned\|broken\|bad\|wrong\|error\|fail\|incorrect\|avoid" || true)
 if [ -n "$FOUND" ]; then
-  echo "FAIL: Forbidden API referenced without prohibition context:"
+  echo "FAIL: Forbidden API referenced without prohibition/example context:"
   echo "$FOUND"
   ERRORS=$((ERRORS + 1))
 else
@@ -62,6 +70,16 @@ for skill in skills/*/SKILL.md; do
   fi
 done
 echo "PASS: All skills within line budget"
+
+echo ""
+echo "=== References Substance Check (>60 lines) ==="
+for ref in skills/*/references/*.md; do
+  LINES=$(wc -l < "$ref")
+  if [ "$LINES" -lt 60 ]; then
+    skill_name=$(echo "$ref" | cut -d/ -f2)
+    echo "  WARN: $ref only $LINES lines (target: 80+)"
+  fi
+done
 
 echo ""
 echo "=== Eval Coverage Check ==="

@@ -1,43 +1,15 @@
 ---
 name: inbox-triage
 description: >
-  Route raw Obsidian inbox captures into keep, promote, project, archive,
-  or deep-read decisions. Load when user asks to triage inbox, sort captures,
-  process fleeting notes, or decide what to promote/archive.
-  Do NOT use for relationship analysis, weekly synthesis, vault health, or note creation.
+  Route raw Obsidian inbox captures into keep/promote/project/archive/deep-read.
+  Load when user asks to triage inbox, sort captures, or process fleeting notes.
+  Do NOT use for relationship analysis, synthesis, health diagnosis, or note creation.
 license: Apache-2.0
-compatibility:
-  runtime: opencode
-  requires: [obsidian-mcp]
-  verified-host: "obsidian-mcp-server@3.1.5 / Windows / 2026-05-10"
+compatibility: opencode; requires obsidian-mcp
 metadata:
-  version: "4.0.0"
+  version: "4.1.0"
   last-reviewed: "2026-05-14"
   owner: r007b34r
-  eval-status: edd-validated
-  token-budget: "~2800 tokens"
-triggers:
-  keywords: [triage, inbox, sort, route, captures, fleeting, unprocessed, 清理, 整理]
-  contexts: ["obsidian vault with unprocessed inbox items"]
-  negative: [relationship, links, synthesis, weekly, health, promote, create note, connections]
-boundaries:
-  owns: [inbox routing, capture classification, shallow-read decisions]
-  delegates_to:
-    connection-review: "items needing relationship analysis"
-    note-promotion: "items marked promote-to-note"
-  never_absorbs: [synthesis, health diagnosis, context maintenance, relationship analysis]
-continuations:
-  on_success:
-    - skill: connection-review
-      condition: "promoted items with link potential > 2"
-    - skill: note-promotion
-      condition: "any item marked promote-to-note and user confirms"
-  on_failure:
-    - skill: vault-health-feedback
-      condition: "inbox path not found or empty"
-  escalation:
-    - target: human
-      condition: "ambiguous items > 60% of batch"
 ---
 
 # inbox-triage
@@ -47,22 +19,37 @@ continuations:
 - NEVER scan whole vault; scope = `Inbox/` or user-specified path only
 - NEVER write back without explicit user confirmation
 - NEVER produce synthesis or thesis; output is routing decisions only
-- NEVER deep-read all items; deep-read only when routing decision is genuinely uncertain
-- MAX 20 items per batch; if more, process in batches and report remainder
-
-## Companion Skill
-
-All vault operations follow `obsidian-mcp`. Forbidden: `obsidian_patch_note`, `obsidian_append_to_note`. Verify every write through readback.
+- NEVER deep-read all items; deep-read only when routing is genuinely uncertain
+- MAX 20 items per batch; split and report remainder if more
 
 ## Trigger Boundary
 
-Use when: triage inbox, sort captures, route raw notes, decide what to promote/archive, process fleeting notes.
+**Use when:** triage inbox, sort captures, route raw notes, process fleeting notes, decide what to promote/archive.
 
-Do NOT use for:
+**Do NOT use for:**
 - Cross-note relationship analysis → `connection-review`
 - Week-level meaning extraction → `weekly-synthesis`
 - Stable note creation → `note-promotion`
 - Vault health diagnosis → `vault-health-feedback`
+
+## Boundaries
+
+- **Owns:** inbox routing, capture classification, shallow-read decisions
+- **Delegates to:** `connection-review` (items needing links), `note-promotion` (items marked promote)
+- **Never absorbs:** synthesis, health diagnosis, context maintenance, relationship analysis
+
+## Continuations
+
+| Condition | Next skill |
+|-----------|-----------|
+| Promoted items with link potential > 2 | `connection-review` |
+| Item marked promote-to-note, user confirms | `note-promotion` |
+| Inbox path not found or empty | `vault-health-feedback` |
+| Ambiguous items > 60% of batch | Escalate to human |
+
+## Companion Skill
+
+All vault operations follow `obsidian-mcp`. Forbidden: `obsidian_patch_note`, `obsidian_append_to_note`. Verify every write through readback.
 
 ## Procedure
 
@@ -71,56 +58,48 @@ Do NOT use for:
 2. Count items; if >20, process first 20 and report remainder
 
 ### Phase 2: Shallow Read
-1. For each candidate: `obsidian_get_note format:"document-map"` → structure
-2. Short notes (<500 words): read as `content/full`
-3. Flag items where routing decision is uncertain → mark for deep-read
+1. For each: `obsidian_get_note format:"document-map"` → structure
+2. Short notes (<500 words): read as `format:"content"`
+3. Flag genuinely uncertain items → mark `needs-deep-read`
 
 ### Phase 3: Classify
-Apply decision matrix:
+
+When classifying, read `references/examples.md` for decision calibration.
 
 | Decision | Use when |
 |----------|----------|
 | keep-in-inbox | Too raw, still incubating |
 | promote-to-note | Stable, reusable, independent |
-| promote-to-idea | Personal observation or framing worth preserving |
+| promote-to-idea | Personal observation worth preserving |
 | move-to-project | Mainly useful inside active project |
 | archive-or-ignore | Low-density, redundant, stale |
-| needs-deep-read | Shallow evidence insufficient but potential value high |
+| needs-deep-read | Shallow evidence insufficient, potential value high |
 
-Evaluation dimensions: reusability, current relevance, cognitive density, connection potential.
+Dimensions: reusability, current relevance, cognitive density, connection potential.
 
 ### Phase 4: Report
-Output per Output Contract. Wait for user confirmation before any write-back.
+
+When formatting output, read `references/templates.md` for the exact output format.
+
+Output batch summary per contract. Wait for user confirmation before any write-back.
 
 <details>
 <summary>Edge Cases (expand only when needed)</summary>
 
-- Empty inbox: report empty, suggest checking path configuration
-- All items ambiguous: escalate to user, ask for 2-3 example decisions to calibrate
-- Mixed languages: classify by content quality, not language
-- Items with broken frontmatter: flag but still classify content
+- **Empty inbox:** report empty, suggest checking path config
+- **All items ambiguous:** escalate to user, ask for 2-3 example decisions to calibrate
+- **Mixed languages:** classify by content quality, not language
+- **Broken frontmatter:** flag but still classify content
+- **Oversized inbox (50+):** process first 20, report "X items remaining, continue?"
+- **Items with no content (title only):** classify as needs-deep-read or archive
 
 </details>
-
-## Output Contract
-
-```text
-Batch: total / shallow-read / deep-read / promote / archive / uncertain
----
-Path: ...
-Decision: ...
-Reason: ... (one sentence)
-Next action: ...
-Write-back needed: yes/no
-```
-
-Default mode: analysis-only. Before write-back, list exact intended changes and wait for confirmation.
 
 ## Gotchas
 
 ### Gotcha 1: Triage becomes mini-synthesis
 **What happens:** Agent writes multi-paragraph analysis for each item
-**Why it's wrong:** Triage is routing, not content production; wastes tokens and blurs boundary with weekly-synthesis
+**Why it's wrong:** Triage is routing, not content production; wastes tokens and crosses into weekly-synthesis territory
 **Correct approach:** One sentence reason + one decision per item
 
 ### Gotcha 2: Over-promotion
@@ -135,12 +114,12 @@ Default mode: analysis-only. Before write-back, list exact intended changes and 
 
 ## Validators
 
-- `validators/pre-check.sh`: Confirms inbox path is accessible and not empty
-- `validators/post-check.sh`: Verifies output contains no synthesis markers (thesis/contradiction/gap)
+- `validators/pre-check.sh`: Confirms inbox path accessible and not empty
+- `validators/post-check.sh`: Verifies output contains no synthesis markers
 
 ## Exit Criteria
 
 - Every candidate has exactly one routing decision or needs-deep-read
 - Triage has not turned into synthesis
 - Batch size ≤20 respected
-- Any write-back has passed obsidian-mcp readback verification
+- Any write-back passed obsidian-mcp readback verification

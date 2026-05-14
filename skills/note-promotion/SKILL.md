@@ -1,72 +1,61 @@
 ---
 name: note-promotion
 description: >
-  Decide whether material from captures, ideas, triage results, or synthesis output
-  should become a stable, reusable, linkable Obsidian note. Load when user asks to
-  upgrade material into a formal note, decide if a finding is worth preserving,
-  or create a linkable knowledge unit. Do NOT use for inbox triage, link discovery,
-  weekly synthesis, or vault health diagnosis.
+  Decide whether material should become a stable, reusable, linkable Obsidian note.
+  Load when user asks to upgrade, promote, or stabilize material into a formal note.
+  Do NOT use for inbox triage, link discovery, or weekly synthesis.
 license: Apache-2.0
-compatibility:
-  runtime: opencode
-  requires: [obsidian-mcp]
-  verified-host: "obsidian-mcp-server@3.1.5 / Windows / 2026-05-10"
+compatibility: opencode; requires obsidian-mcp
 metadata:
-  version: "4.0.0"
+  version: "4.1.0"
   last-reviewed: "2026-05-14"
   owner: r007b34r
-  eval-status: edd-validated
-  token-budget: "~2400 tokens"
-triggers:
-  keywords: [promote, upgrade, formal note, preserve, stabilize, create note, 晋升, 正式笔记]
-  contexts: ["material ready to become reusable linkable knowledge note"]
-  negative: [triage, inbox, sort, links, connections, synthesis, weekly, health]
-boundaries:
-  owns: [promotion decision, note type selection, integration planning]
-  delegates_to:
-    connection-review: "new note needs integration links"
-    inbox-triage: "material too raw, return to inbox"
-  never_absorbs: [inbox routing, relationship analysis, synthesis, health diagnosis]
-continuations:
-  on_success:
-    - skill: connection-review
-      condition: "new promoted note needs integration links"
-  on_failure:
-    - skill: inbox-triage
-      condition: "material fails promotion test, return to inbox"
-  escalation:
-    - target: human
-      condition: "promotion decision is ambiguous after scoring"
 ---
 
 # note-promotion
 
 ## Constraints
 
-- NEVER promote every good idea; require stability + reuse + independence
-- NEVER treat promotion as polishing; decide whether promotion is warranted FIRST
-- NEVER overwrite source voice; preserve strong original phrasing
-- NEVER create notes without integration targets (links)
+- NEVER promote everything; require stability + reuse + independence
+- NEVER polish before deciding; score first, format only if promoting
+- NEVER create notes without integration targets (minimum 2 links)
 - NEVER write without user confirmation
+- NEVER overwrite source voice; preserve strong original phrasing
+
+## Trigger Boundary
+
+**Use when:** upgrade material into formal note, decide if finding is worth preserving, turn synthesis output into stable note, create linkable knowledge unit, user says "promote" or "stabilize."
+
+**Do NOT use for:**
+- First-pass inbox routing -> `inbox-triage`
+- Note relationship discovery -> `connection-review`
+- Week-level meaning extraction -> `weekly-synthesis`
+- Vault system health diagnosis -> `vault-health-feedback`
+
+## Boundaries
+
+- **Owns:** promotion decision, note type selection, integration planning, write execution
+- **Delegates to:** `connection-review` (new note needs integration links), `inbox-triage` (material too raw)
+- **Never absorbs:** inbox routing, relationship analysis, synthesis, health diagnosis
+
+## Continuations
+
+| Condition | Next skill |
+|-----------|-----------|
+| New promoted note needs integration links | `connection-review` |
+| Material fails promotion test, return to inbox | `inbox-triage` |
+| Promotion decision is ambiguous after scoring | Escalate to human |
 
 ## Companion Skill
 
 All vault operations follow `obsidian-mcp`. Forbidden: `obsidian_patch_note`, `obsidian_append_to_note`. Verify every write through readback.
-
-## Trigger Boundary
-
-Use when: upgrade material into formal note, decide if finding is worth preserving, turn synthesis output into stable note, create linkable knowledge unit.
-
-Do NOT use for:
-- First-pass inbox routing → `inbox-triage`
-- Note relationship discovery → `connection-review`
-- Week-level meaning extraction → `weekly-synthesis`
-- Vault system health diagnosis → `vault-health-feedback`
-
 ## Procedure
 
 ### Phase 1: Score
-Apply promotion test (≥3/5 to promote):
+
+When scoring, read `references/examples.md` for promotion calibration.
+
+Apply promotion test (>=3/5 to promote):
 
 | Criterion | Score | Evidence required |
 |-----------|-------|-------------------|
@@ -76,8 +65,8 @@ Apply promotion test (≥3/5 to promote):
 | Connectable (links exist) | 0/1 | Can link to existing theme/project/question |
 | Compression benefit | 0/1 | Clearer or more retrievable than source |
 
-Score < 3 → recommend wait / keep raw / archive
-Score ≥ 3 → proceed to Phase 2
+Score < 3: recommend wait / keep raw / archive.
+Score >= 3: proceed to Phase 2.
 
 ### Phase 2: Type Selection
 
@@ -92,74 +81,52 @@ Score ≥ 3 → proceed to Phase 2
 | question-note | The question itself is worth returning to |
 
 ### Phase 3: Plan
+
 Define: title, tags, links (integration targets), write strategy (create new or merge into existing).
 
 ### Phase 4: Execute (after user confirmation only)
+
+When writing promoted notes, read `references/templates.md` for note structure.
+
 1. `obsidian_write_note overwrite:false` for new notes
 2. `obsidian_replace_in_note` for merging into existing
 3. Read back and verify frontmatter, content, links
-
 <details>
-<summary>Note Template (read when writing)</summary>
+<summary>Edge Cases (expand when decision is unclear)</summary>
 
-```markdown
----
-tags: [...]
-created: YYYY-MM-DD
-type: [reference|idea|project|topic|synthesis|contradiction|question]
-source: [original capture path]
----
-# Title
-
-## Claim / Idea
-
-## Evidence / Context
-
-## Implications
-
-## Links
-```
+- Material scores 3/5 but all points are weak: default to "wait" -- borderline cases benefit from time
+- Material is excellent but has zero link targets: cannot promote yet; suggest creating a topic-note first
+- Source is a synthesis output: check if synthesis-note type is appropriate or if the thesis deserves idea-note treatment
+- Multiple candidates from same source: promote the strongest one; note others as "watch" items
+- Material overlaps with existing note: merge strategy preferred over creating near-duplicates
 
 </details>
-
-## Output Contract
-
-```text
-Promotion decision: promote / wait / keep raw / archive
-Score: X/5 (with per-criterion evidence)
-Target type: ...
-Reason: ...
-Proposed title: ...
-Tags: ...
-Integration targets (links): ...
-Write-back plan: create new / merge; awaiting confirmation
-```
 
 ## Gotchas
 
 ### Gotcha 1: Promoting every good idea
 **What happens:** Agent marks most material as worth promoting
-**Why it's wrong:** Creates hollow vault growth; promoted notes without stability become noise
+**Why it is wrong:** Creates hollow vault growth; promoted notes without stability become noise
 **Correct approach:** Apply scoring strictly; default to "wait" when uncertain
 
 ### Gotcha 2: Promotion as polishing
 **What happens:** Agent rewrites and beautifies content without deciding if promotion is warranted
-**Why it's wrong:** Polishing is not promotion; a well-written fragment is still a fragment
+**Why it is wrong:** Polishing is not promotion; a well-written fragment is still a fragment
 **Correct approach:** Score first, decide promote/wait, THEN format if promoting
 
 ### Gotcha 3: Island notes without links
 **What happens:** Agent creates a promoted note with no links to existing knowledge
-**Why it's wrong:** Unlinked notes are undiscoverable; defeats the purpose of promotion
+**Why it is wrong:** Unlinked notes are undiscoverable; defeats the purpose of promotion
 **Correct approach:** Require at least 2 integration targets before writing
 
 ## Validators
 
 - `validators/pre-check.sh`: Confirms source material exists and is readable
-- `validators/post-check.sh`: Verifies promoted note has frontmatter, ≥2 links, and correct type tag
+- `validators/post-check.sh`: Verifies promoted note has frontmatter, >=2 links, and correct type tag
 
 ## Exit Criteria
 
-- Promotion decision is explicit with score
+- Promotion decision is explicit with score and per-criterion evidence
 - Weak material has not been polished into fake clarity
-- Integration targets are named (≥2 links)
+- Integration targets are named (>=2 links)
 - If written: note exists, frontmatter correct, content reads back correctly

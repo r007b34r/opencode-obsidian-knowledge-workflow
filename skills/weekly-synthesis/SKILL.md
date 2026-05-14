@@ -2,43 +2,15 @@
 name: weekly-synthesis
 description: >
   Extract time-window meaning from recent Obsidian notes: emerging thesis,
-  meaningful contradictions, gaps, exactly one next action, exactly one next question.
-  Load when user asks for weekly synthesis, what recent notes mean, emerging thesis,
-  or highest-value next action. Do NOT use for inbox triage, link-only review,
-  project status, or direct note promotion.
+  contradictions, gaps, exactly one action, exactly one question.
+  Load when user asks for weekly synthesis, what recent notes mean, or next action.
+  Do NOT use for inbox triage, link-only review, or note promotion.
 license: Apache-2.0
-compatibility:
-  runtime: opencode
-  requires: [obsidian-mcp]
-  verified-host: "obsidian-mcp-server@3.1.5 / Windows / 2026-05-10"
+compatibility: opencode; requires obsidian-mcp
 metadata:
-  version: "4.0.0"
+  version: "4.1.0"
   last-reviewed: "2026-05-14"
   owner: r007b34r
-  eval-status: edd-validated
-  token-budget: "~2500 tokens"
-triggers:
-  keywords: [synthesis, weekly, what did I learn, thesis, meaning, 综合, 本周, 总结]
-  contexts: ["recent obsidian notes need time-window meaning extraction"]
-  negative: [triage, inbox, sort, links only, connections, health, promote, status report]
-boundaries:
-  owns: [time-window meaning extraction, thesis formation, gap identification]
-  delegates_to:
-    note-promotion: "synthesis output ready to become stable note"
-    opencode-context-maintenance: "thesis reveals context drift"
-  never_absorbs: [inbox routing, link-only review, health diagnosis]
-continuations:
-  on_success:
-    - skill: note-promotion
-      condition: "user wants to preserve synthesis as stable note"
-    - skill: opencode-context-maintenance
-      condition: "thesis or gaps reveal context drift"
-  on_failure:
-    - skill: connection-review
-      condition: "insufficient signal for synthesis; try relationship analysis first"
-  escalation:
-    - target: human
-      condition: "signal too weak to form any thesis"
 ---
 
 # weekly-synthesis
@@ -52,19 +24,34 @@ continuations:
 - If signal is weak: say "conclusion is uncertain" — do NOT force a thesis
 - Default time window: 7 days unless user specifies otherwise
 
-## Companion Skill
-
-All vault operations follow `obsidian-mcp`. Forbidden: `obsidian_patch_note`, `obsidian_append_to_note`. Verify every write through readback.
-
 ## Trigger Boundary
 
-Use when: weekly synthesis, what recent notes mean, emerging thesis, one most valuable next action/question, time-window meaning-making.
+**Use when:** weekly synthesis, what recent notes mean, emerging thesis, one most valuable next action/question, time-window meaning-making.
 
-Do NOT use for:
+**Do NOT use for:**
 - Raw material routing → `inbox-triage`
 - Link-only or relationship review → `connection-review`
 - Project status reporting (not synthesis)
-- Promoting result into stable note → hand off to `note-promotion`
+- Promoting result into stable note → `note-promotion`
+
+## Boundaries
+
+- **Owns:** time-window meaning extraction, thesis formation, gap identification
+- **Delegates to:** `note-promotion` (synthesis ready for stable note), `opencode-context-maintenance` (thesis reveals drift)
+- **Never absorbs:** inbox routing, link-only review, health diagnosis
+
+## Continuations
+
+| Condition | Next skill |
+|-----------|-----------|
+| User wants to preserve synthesis as stable note | `note-promotion` |
+| Thesis or gaps reveal context drift | `opencode-context-maintenance` |
+| Insufficient signal; try relationships first | `connection-review` |
+| Signal too weak to form any thesis | Escalate to human |
+
+## Companion Skill
+
+All vault operations follow `obsidian-mcp`. Forbidden: `obsidian_patch_note`, `obsidian_append_to_note`. Verify every write through readback.
 
 ## Procedure
 
@@ -79,7 +66,10 @@ Do NOT use for:
 3. Use older notes only for calibration (not primary signal)
 
 ### Phase 3: Synthesize
-Extract meaning across six dimensions:
+
+When extracting meaning, read `references/examples.md` for thesis quality calibration.
+
+Six dimensions:
 1. **Emerging thesis**: one claim + supporting evidence (or "uncertain" if weak)
 2. **Contradictions**: only tensions that matter for reasoning
 3. **Gaps**: missing perspective, evidence, decision, or experiment
@@ -87,35 +77,22 @@ Extract meaning across six dimensions:
 5. **One question**: exactly one question worth preserving
 6. **Follow-up note suggestions**: optional downstream notes
 
-### Phase 4: Report
-Output per Output Contract. Do not write synthesis note by default.
-
 <details>
 <summary>Weak Signal Handling (expand when theme stability is low)</summary>
 
-- If fewer than 3 notes in window: report insufficient data, suggest expanding window
-- If notes are all on different topics: report fragmentation, no forced thesis
-- If contradictions are only surface-level: report "no meaningful contradictions found"
-- Acceptable output: "Thesis uncertain. Strongest signal is [X] but evidence is thin."
+- Fewer than 3 notes in window: report insufficient data, suggest expanding window
+- Notes all on different topics: report fragmentation, no forced thesis
+- Contradictions only surface-level: report "no meaningful contradictions found"
+- Acceptable: "Thesis uncertain. Strongest signal is [X] but evidence is thin."
+- One action can be "gather more data on [X]" when signal is genuinely weak
 
 </details>
 
-## Output Contract
+### Phase 4: Report
 
-```text
-Scope: [time window] / [note count] / [deep-read count]
-Theme stability: low / medium / high
----
-Emerging thesis: ...
-  Evidence: ...
-Contradictions: ...
-Gaps: ...
-One action: ...
-One question: ...
-Follow-up note suggestions: ...
-```
+When formatting output, read `references/templates.md` for the exact synthesis format.
 
-After user approval, create synthesis note with `obsidian_write_note overwrite:false` and read back.
+Do not write synthesis note by default. After user approval, create with `obsidian_write_note overwrite:false` and read back.
 
 ## Gotchas
 
@@ -131,13 +108,12 @@ After user approval, create synthesis note with `obsidian_write_note overwrite:f
 
 ### Gotcha 3: Old notes dominate the thesis
 **What happens:** Agent builds thesis primarily from notes older than the time window
-**Why it's wrong:** Recent signal disappears; synthesis becomes a rehash of established knowledge
+**Why it's wrong:** Recent signal disappears; synthesis becomes rehash of established knowledge
 **Correct approach:** Use older notes only as calibration; thesis must be grounded in recent evidence
 
 ## Validators
 
 - `validators/post-check.sh`: Verifies exactly one "One action:" and one "One question:" in output
-- `validators/no-recap-check.sh`: Flags output that lacks thesis/evidence structure
 
 ## Exit Criteria
 
