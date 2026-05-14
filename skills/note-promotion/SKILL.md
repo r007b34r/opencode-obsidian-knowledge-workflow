@@ -35,7 +35,7 @@ continuations:
     - skill: inbox-triage
       condition: "material fails promotion test, return to inbox"
   escalation:
-    - human
+    - target: human
       condition: "promotion decision is ambiguous after scoring"
 ---
 

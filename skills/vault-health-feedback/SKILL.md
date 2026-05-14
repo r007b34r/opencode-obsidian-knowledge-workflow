@@ -37,7 +37,7 @@ continuations:
     - skill: opencode-context-maintenance
       condition: "vault paths inaccessible, possible config issue"
   escalation:
-    - human
+    - target: human
       condition: "vault is deeply archival, needs structural redesign"
 ---
 

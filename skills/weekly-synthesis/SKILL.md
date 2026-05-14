@@ -37,7 +37,7 @@ continuations:
     - skill: connection-review
       condition: "insufficient signal for synthesis; try relationship analysis first"
   escalation:
-    - human
+    - target: human
       condition: "signal too weak to form any thesis"
 ---
 

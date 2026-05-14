@@ -38,7 +38,7 @@ continuations:
     - skill: vault-health-feedback
       condition: "repeated MCP failures suggest environment issue"
   escalation:
-    - human
+    - target: human
       condition: "3 repeated failures on same operation"
 ---
 

@@ -37,7 +37,7 @@ continuations:
     - skill: inbox-triage
       condition: "notes too raw for relationship analysis"
   escalation:
-    - human
+    - target: human
       condition: "all connections are weak/uncertain"
 ---
 

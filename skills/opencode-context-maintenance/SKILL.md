@@ -34,7 +34,7 @@ continuations:
     - skill: obsidian-mcp
       condition: "context notes inaccessible, need vault operation"
   escalation:
-    - human
+    - target: human
       condition: "config changes needed that could break environment"
 ---
 

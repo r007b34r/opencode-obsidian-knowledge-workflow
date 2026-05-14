@@ -36,7 +36,7 @@ continuations:
     - skill: vault-health-feedback
       condition: "inbox path not found or empty"
   escalation:
-    - human
+    - target: human
       condition: "ambiguous items > 60% of batch"
 ---
 
