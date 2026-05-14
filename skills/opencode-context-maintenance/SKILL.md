@@ -123,7 +123,7 @@ When formatting recommendations, read `references/templates.md`.
 **Why it is wrong:** Token waste; most notes are not context sources
 **Correct approach:** Identify context entry points (Meta/, project indexes) and check only those
 
-## Validators
+## Validators (CI only, not runtime)
 
 - `validators/pre-check.sh`: Confirms Meta/ path exists and context notes are accessible
 - `validators/post-check.sh`: Verifies no config files were modified

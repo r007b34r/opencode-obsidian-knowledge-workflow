@@ -120,7 +120,7 @@ Severity ranking:
 **Why it is wrong:** Unauthorized modification; diagnosis should inform, not act
 **Correct approach:** Report findings, recommend interventions, wait for confirmation
 
-## Validators
+## Validators (CI only, not runtime)
 
 - `validators/pre-check.sh`: Confirms vault is accessible for sampling
 - `validators/post-check.sh`: Verifies <=3 recommendations and layer order respected

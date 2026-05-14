@@ -108,7 +108,7 @@ Default mode: analysis-only. Write links only after confirmation using `obsidian
 **Why it's wrong:** That is weekly-synthesis territory; connection-review stops at relationships
 **Correct approach:** Report links, patterns, contradictions, follow-ups — do not interpret overall meaning
 
-## Validators
+## Validators (CI only, not runtime)
 
 - `validators/pre-check.sh`: Confirms note set is bounded (≤15 primary notes)
 - `validators/post-check.sh`: Verifies output contains no synthesis markers (thesis/emerging meaning)

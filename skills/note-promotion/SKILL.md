@@ -119,7 +119,7 @@ When writing promoted notes, read `references/templates.md` for note structure.
 **Why it is wrong:** Unlinked notes are undiscoverable; defeats the purpose of promotion
 **Correct approach:** Require at least 2 integration targets before writing
 
-## Validators
+## Validators (CI only, not runtime)
 
 - `validators/pre-check.sh`: Confirms source material exists and is readable
 - `validators/post-check.sh`: Verifies promoted note has frontmatter, >=2 links, and correct type tag

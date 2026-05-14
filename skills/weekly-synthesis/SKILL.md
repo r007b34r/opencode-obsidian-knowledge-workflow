@@ -111,7 +111,7 @@ Do not write synthesis note by default. After user approval, create with `obsidi
 **Why it's wrong:** Recent signal disappears; synthesis becomes rehash of established knowledge
 **Correct approach:** Use older notes only as calibration; thesis must be grounded in recent evidence
 
-## Validators
+## Validators (CI only, not runtime)
 
 - `validators/post-check.sh`: Verifies exactly one "One action:" and one "One question:" in output
 

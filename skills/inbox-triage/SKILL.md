@@ -112,7 +112,7 @@ Output batch summary per contract. Wait for user confirmation before any write-b
 **Why it's wrong:** Wastes token budget; most routing decisions need only document-map
 **Correct approach:** Document-map first; deep-read only genuinely uncertain items
 
-## Validators
+## Validators (CI only, not runtime)
 
 - `validators/pre-check.sh`: Confirms inbox path accessible and not empty
 - `validators/post-check.sh`: Verifies output contains no synthesis markers
